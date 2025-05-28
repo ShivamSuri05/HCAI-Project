@@ -9,41 +9,58 @@
 {% block content %}
 
 <div class="box">
+    <!-- Header -->
     <div class="title-container">
-        <div class = "title">HCAI project hub</div>
+        <div class="title-text">
+            <h1>Human Centric</h1>
+            <h2>Artificial Intelligence</h2>
+        </div>
+        <!-- Image 1 -->
+        <div id="image1">
+            <img src="{% static 'home/images/image-1.png' %}" alt="img1" style="width: 15vw;">
+        </div>
+        <!-- Neural Network GIF -->
+        <div id="nn-gif">
+            <img src="{% static 'home/images/NN2.gif' %}" alt="Neural Network GIF" style="width: 150px;">
+        </div>
     </div>
 
-    <div class="main-text">
-    <div class="summary" >
-        <p class="centered-text">This page serves as the central hub for student 
-        projects developed as part of the <strong>Human-Centric Artificial Intelligence</strong> 
-        course, by the following group:</p>
-    </div>
+    <div class="col1">
+        <div id="image2">
+            <img src="{% static 'home/images/photo.jpg' %}" alt="developerpic">
+        </div>
     
+    <!-- Team Members -->
     <div class="students">
+        <h1 style="color: #152c49;">Developer</h1>
         <ul class="student-list">
             {% for student in students %}
-                <li class="student-item">
-                    <span class="student-name">{{ student.name }}</span> –
-                    <span class="student-id">{{ student.matriculation }}</span>
+                <li class="student-item" style="margin-bottom: 10px;">
+                    <button>{{ student.name }}</button>
+                    <button class="mtr-no">{{ student.matriculation }}</button>
                 </li>
             {% empty %}
                 <li>No students found.</li>
             {% endfor %}
         </ul>
     </div>
-    
-    
+    </div>
+    <div id="image4">
+            <img src="{% static 'home/images/image-4.png' %}" alt="img4">
+    </div>
+    <div class="col2">
+    <!-- Projects -->
     <div class="projects">
-        <h2 style="text-align: center;">Projects</h2>
-        <div class="button-container">
+        <h1>Projects</h1>
+        <div class="button-container" style="display: inline-block;">
             {% for project in projects %}
-                <form action="{% url project.url_name %}" method="get" style="margin-bottom: 10px;">
+                <form action="{% url project.url_name %}" method="get">
                     {% csrf_token %}
                     <button type="submit">{{ project.name }}</button>
                 </form>
             {% endfor %}
         </div>
+    </div>
     </div>
     
 

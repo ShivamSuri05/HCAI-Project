@@ -1,30 +1,100 @@
-.student-id {
-    font-family: monospace;
-    color: #555;
+/* home/style.css */
+
+.title-container h1 {
+    color: #152c49;
+    font-size: 6.5vw;
+    margin: 0;
+    margin-top: 2.5%;
+}
+
+.title-container h2 {
+    color: #152c49;
+    font-size: 4.7vw;
+    margin-top: -1%;
 }
 
 .student-list {
-    list-style: none;
-    padding: 0;
-    max-width: 500px;
-    margin: 0 auto;
-    background: #f9f9f9;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    margin-left: -8vw;
+    position: relative;
+    top: -1vw;
 }
 
 .student-item {
-    padding: 10px 20px;
-    border-bottom: 1px solid #ddd;
-    font-size: 16px;
     display: flex;
-    justify-content: space-between;
+    gap: 10px;
+    margin-left: -8vw;
+    flex-direction: column;
 }
 
-.student-item:last-child {
-    border-bottom: none;
+.student-item button {
+    background-color: #01182d;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1vw;
+    cursor: default;
+    width: 11vw;
 }
 
+.projects{
+    display: inline-block;
+}
+
+.projects h1 {
+    margin-bottom: 20px;
+    padding-left: 2.2vw;
+    font-size: 3vw;
+    color: #152c49;
+}
+
+.button-container form button,
+form button {
+    background-color: #01182d;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.button-container form button:hover,
+form button:hover {
+    background-color: #33497a;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.students{
+    margin: 0vw 10vw;
+    position: relative;
+    top: 8vw;
+}
+
+.students h1{
+    padding-left: 2.2vw;
+    font-size: 2.4vw;
+    left: 0.7vw;
+    position: relative;
+}
+
+.projects button{
+    width: 13vw;
+    position: relative;
+    left: 2vw;
+    margin-bottom: 1vw;
+}
+/* Center alignment helpers */
 .centered-text {
     text-align: center;
+}
+
+form {
+    display: inline-block;
 }
