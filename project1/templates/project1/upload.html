@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{%  load static %}
+
+
+{% block content %}
+
+<div class="box">
+    <div class="title-container">
+        <div class = "title">Upload a CSV File</div>
+    </div>
+
+    <div class="main-text">
+        <p>Debug: head is {% if head %}present{% else %}missing{% endif %}</p>
+
+        <form id="full-form" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+
+  <button type="submit" name="action" value="upload">Upload</button>
+
+  {% if head %}
+    <h3>First 5 Rows</h3>
+    {{ head|safe }}
+
+    <h3>Last 5 Rows</h3>
+    {{ tail|safe }}
+
+    {% if missing_data %}
+      <h3>Missing Values</h3>
+      <ul>
+        {% for col, count in missing_data.items %}
+          <li>{{ col }} ({{ count }} missing)
+            <select name="missing_{{ col }}">
+              <option value="drop">Remove rows</option>
+              <option value="keep">Keep as is</option>
+              <option value="mean">Fill with mean</option>
+              <option value="median">Fill with median</option>
+              <option value="mode">Fill with mode</option>
+            </select>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if outliers %}
+      <h3>Outliers</h3>
+      <ul>
+        {% for col, count in outliers.items %}
+          <li>{{ col }} ({{ count }} outliers)
+            <select name="outlier_{{ col }}">
+              <option value="keep">Keep as is</option>
+              <option value="remove">Remove outliers</option>
+              <option value="cap">Cap outliers (IQR)</option>
+            </select>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if columns %}
+      <h3>Select Target/Label Column</h3>
+      <select name="target_column" required>
+        <option value="" disabled selected>Select target column</option>
+        {% for col in columns %}
+          <option value="{{ col }}">{{ col }}</option>
+        {% endfor %}
+      </select>
+    {% endif %}
+
+    <button type="button" id="generate-plots-btn">Generate Plots</button>
+
+    <div id="plots-section"></div>
+
+    <script>
+      document.getElementById("generate-plots-btn").addEventListener("click", function () {
+        const form = document.getElementById("full-form");
+        const formData = new FormData();
+
+        // Append only necessary fields except the file
+        for (const element of form.elements) {
+          if (!element.name.startsWith('file')) {  // skip file input
+            if (element.value) {
+              formData.append(element.name, element.value);
+            }
+          }
+        }
+
+        fetch("{% url 'project1:generate_plots' %}", {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+          body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("plots-section").innerHTML = data.html;
+        })
+        .catch(error => {
+          console.error("Error generating plots:", error);
+        });
+      });
+    </script>
+  {% endif %}
+</form>
+    </div>
+    
+
+</div>
+
+{% endblock %}
+
+{% block script %}
+{% endblock script %}

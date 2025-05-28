@@ -4,5 +4,6 @@ from . import views
 app_name = "project1"
 
 urlpatterns = [
-    path('index', views.index, name='index'),
+    path('index/', views.upload_csv, name='upload'), 
+    path('generate_plots/', views.generate_plots, name='generate_plots')
 ]
