@@ -1,5 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 import pandas as pd
+import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -9,12 +10,17 @@ import base64
 from django.shortcuts import render
 from .forms import UploadCSVForm
 from django.core.files.storage import FileSystemStorage
-from .utils import handle_missing, handle_outliers
+from .utils import handle_missing, handle_outliers, evaluate_classification, evaluate_regression
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.conf import settings
 import os
+import uuid
 import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, r2_score
 
 
 def upload_csv(request):
@@ -23,8 +29,7 @@ def upload_csv(request):
     context = {}
 
     if request.method == 'POST':
-        action = request.POST.get('action')
-        print("User action:", action)  
+        action = request.POST.get('action') 
 
         form = UploadCSVForm(request.POST, request.FILES)
         if action == 'upload':
@@ -115,8 +120,33 @@ def generate_plots(request):
             
             df = pd.read_csv(temp_path)  # reload saved CSV
             target_col = request.POST.get('target_column')
+            request.session["target_column"] = target_col
+
             if not target_col or target_col not in df.columns:
                 return JsonResponse({'error': 'Invalid or missing target column'}, status=400)
+
+            # Handle missing values
+            for col in df.columns:
+                missing_key = f'missing_{col}'
+                if missing_key in request.POST:
+                    strategy = request.POST[missing_key]
+                    df = handle_missing(df, col, strategy)
+
+            # Handle outliers only for numeric columns
+            numeric_cols = df.select_dtypes(include=[np.number]).columns
+            for col in numeric_cols:
+                outlier_key = f'outlier_{col}'
+                if outlier_key in request.POST:
+                    strategy = request.POST[outlier_key]
+                    df = handle_outliers(df, col, strategy)
+
+            # Save cleaned df to a new temp file
+            cleaned_filename = f"cleaned_{uuid.uuid4().hex}.csv"
+            cleaned_path = os.path.join(settings.MEDIA_ROOT, cleaned_filename)  # Use your actual temp directory path
+            df.to_csv(cleaned_path, index=False)
+
+            # Update session to point to cleaned file
+            request.session['temp_csv_path'] = cleaned_path
 
             plots_html = ""
 
@@ -171,12 +201,84 @@ def generate_plots(request):
 
             corr_img = generate_correlation_heatmap(df)
             plots_html += f'<div style="margin-bottom: 20px;"><img src="data:image/png;base64,{corr_img}" alt="Correlation Heatmap"/></div>'
-            return JsonResponse({'html': plots_html})
+            
+            train_form_html = render_to_string("project1/train_model_form.html", {"columns": df.columns})
+            return JsonResponse({
+                'html': plots_html,
+                "train_html": train_form_html
+                })
 
         except Exception as e:
-            print("error")
             print(e)
             return JsonResponse({'error': str(e)}, status=500)
 
 def index(request):
     return HttpResponse("Welcome to Project 1!")
+
+@csrf_exempt
+def train_model(request):
+    if request.method == 'POST':
+        try:
+            temp_path = request.session.get('temp_csv_path')
+            if not temp_path:
+                return JsonResponse({'error': 'CSV not found'}, status=400)
+
+            df = pd.read_csv(temp_path)
+            target = target = request.session.get('target_column')
+            model_type = request.POST.get('model_type')
+            
+            split_ratio = float(request.POST.get('test_size'))
+            
+            random_state = int(request.POST.get('random_state'))
+
+            if target not in df.columns:
+                return JsonResponse({'error': 'Invalid target column'}, status=400)
+
+            X = df.drop(columns=[target])
+            X = pd.get_dummies(X)
+            y = df[target]
+            # Encode target if classification model is selected
+            if model_type in ['logistic_regression', 'random_forest']:
+                if y.dtype == 'object' or y.dtype.name == 'category':
+                    from sklearn.preprocessing import LabelEncoder
+                    le = LabelEncoder()
+                    y = le.fit_transform(y)
+
+            if model_type in ['linear_regression']:
+                if y.dtype == 'object' or y.dtype.name == 'category':
+                    # Convert categorical y to numeric codes (single column)
+                    y = y.astype('category').cat.codes
+
+
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=split_ratio, random_state=random_state)
+
+            if model_type == 'linear_regression':
+
+                model = LinearRegression()
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+                evaluation_metrics = evaluate_regression(y_test, y_pred)
+
+            elif model_type == 'logistic_regression':
+                model = LogisticRegression(max_iter=1000)
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+                evaluation_metrics = evaluate_classification(y_test, y_pred)
+
+            elif model_type == 'random_forest':
+                model = RandomForestClassifier()
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+                evaluation_metrics = evaluate_classification(y_test, y_pred)
+
+            else:
+                return JsonResponse({'error': 'Invalid model type'}, status=400)
+
+            return JsonResponse({
+                'message': 'Model trained successfully', 
+                'metrics': evaluation_metrics
+            })
+
+        except Exception as e:
+            print(e)
+            return JsonResponse({'error': str(e)}, status=500)
