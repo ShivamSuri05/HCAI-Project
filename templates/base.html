@@ -18,4 +18,20 @@
         {% block script %}
         {% endblock script %}
     </body>
+    <footer style="text-align: center; padding: 15px; font-size: 14px; background-color: #fff6e8; color: #444; margin-top: 40px; position: relative;">
+        © 2025 Human Centric Artificial Intelligence PBL
+  <div>
+    <a href="{% url 'home:index' %}">Home</a> |
+    <a href="{% url 'project1:upload' %}?csrfmiddlewaretoken={{ csrf_token }}">Project 1</a> |
+    <a href="{% url 'project2:index' %}?csrfmiddlewaretoken={{ csrf_token }}">Project 2</a>  |
+    <a href="{% url 'project3:index' %}?csrfmiddlewaretoken={{ csrf_token }}">Project 3</a>  |
+    <a href="{% url 'project4:index' %}?csrfmiddlewaretoken={{ csrf_token }}">Project 4</a>  |
+    <a href="{% url 'project5:index' %}?csrfmiddlewaretoken={{ csrf_token }}">Project 5</a> 
+  </div>
+  <br><br>
+  <div style="margin-top: 10px;">
+    <a href="#" title="Back to top" style="font-size: 20px; text-decoration: none;">Back to Top ⬆️</a>
+  </div>
+</footer>
+
 </html>

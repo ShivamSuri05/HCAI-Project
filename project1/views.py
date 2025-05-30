@@ -219,6 +219,7 @@ def index(request):
 def train_model(request):
     if request.method == 'POST':
         try:
+            print(request.POST.dict())
             temp_path = request.session.get('temp_csv_path')
             if not temp_path:
                 return JsonResponse({'error': 'CSV not found'}, status=400)
@@ -229,7 +230,21 @@ def train_model(request):
             
             split_ratio = float(request.POST.get('test_size'))
             
-            random_state = int(request.POST.get('random_state'))
+            random_state = int(request.POST.get('random_state', 42))
+
+            # For Linear Regression
+            fit_intercept = request.POST.get('fit_intercept') == 'on'  # bool (checkbox)
+
+            # For Logistic Regression
+            regularization_type = request.POST.get('regularization_type', 'l2')  # str
+            regularization_strength = float(request.POST.get('regularization_strength', 1.0))  # float
+
+            # For Random Forest
+            n_estimators = int(request.POST.get('n_estimators', 100))  # int, default 100
+            max_depth = request.POST.get('max_depth')
+            max_depth = int(max_depth) if max_depth else None  # int or None
+            min_samples_split = int(request.POST.get('min_samples_split', 2))  # int
+            min_samples_leaf = int(request.POST.get('min_samples_leaf', 1))  # int
 
             if target not in df.columns:
                 return JsonResponse({'error': 'Invalid target column'}, status=400)
@@ -253,20 +268,41 @@ def train_model(request):
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=split_ratio, random_state=random_state)
 
             if model_type == 'linear_regression':
-
-                model = LinearRegression()
+                model = LinearRegression(fit_intercept=fit_intercept)
                 model.fit(X_train, y_train)
                 y_pred = model.predict(X_test)
                 evaluation_metrics = evaluate_regression(y_test, y_pred)
 
             elif model_type == 'logistic_regression':
-                model = LogisticRegression(max_iter=1000)
+                # Map regularization_type to solver and penalty properly:
+                penalty = regularization_type
+                solver = 'lbfgs'  # default solver; for l1 or elasticnet, solver must be 'saga'
+                
+                if penalty == 'l1' or penalty == 'elasticnet':
+                    solver = 'saga'
+                if penalty == 'none':
+                    penalty = 'none'
+
+                model = LogisticRegression(
+                    penalty=penalty,
+                    C=regularization_strength,
+                    max_iter=1000,
+                    solver=solver,
+                    l1_ratio=0.5 if penalty == 'elasticnet' else None,  # l1_ratio needed for elasticnet
+                )
                 model.fit(X_train, y_train)
                 y_pred = model.predict(X_test)
                 evaluation_metrics = evaluate_classification(y_test, y_pred)
 
             elif model_type == 'random_forest':
-                model = RandomForestClassifier()
+                print(f"RandomForest parameters: n_estimators={n_estimators}, max_depth={max_depth}, min_samples_split={min_samples_split}, min_samples_leaf={min_samples_leaf}")
+                model = RandomForestClassifier(
+                    n_estimators=n_estimators,
+                    max_depth=max_depth,
+                    min_samples_split=min_samples_split,
+                    min_samples_leaf=min_samples_leaf,
+                    random_state=random_state,
+                )
                 model.fit(X_train, y_train)
                 y_pred = model.predict(X_test)
                 evaluation_metrics = evaluate_classification(y_test, y_pred)

@@ -2,21 +2,38 @@
 
 {%  load static %}
 
+{% block extra_css %}
+        <link rel= "stylesheet" href="{% static 'project1/style.css'%}">
+{% endblock %}
+
 
 {% block content %}
 
 <div class="box">
     <div class="title-container">
-        <div class = "title">Upload a CSV File</div>
+        <div class="title-text">
+            <h1>Human Centric</h1>
+            <h2>Artificial Intelligence</h2>
+        </div>
+        <!-- Image 1 -->
+        <div id="image1">
+            <img src="{% static 'images/image-1.png' %}" alt="img1" style="width: 15vw;">
+        </div>
+        <!-- Neural Network GIF -->
+        <div id="nn-gif">
+            <img src="{% static 'images/NN2.gif' %}" alt="Neural Network GIF" style="width: 150px;">
+        </div>
     </div>
 
     <div class="main-text">
+      <br><br>
+      <div class="section-heading">Upload CSV</div>
 
         <form id="full-form" method="post" enctype="multipart/form-data">
   {% csrf_token %}
   {{ form.as_p }}
 
-  <button type="submit" name="action" value="upload">Upload</button>
+  <button type="submit" class="upload-btn" name="action" value="upload">Upload</button>
 
   {% if head %}
     <h3>First 5 Rows</h3>
@@ -107,6 +124,37 @@
   // Attach event listener after inserting train form
   const trainForm = document.getElementById("train-model-form");
   if (trainForm) {
+    const modelSelect = document.getElementById("model_type");
+    const toggleAdvancedBtn = document.getElementById("toggle-advanced");
+    const advancedParams = document.getElementById("advanced-params");
+    const paramDivs = document.querySelectorAll(".model-params");
+
+    // Show respective advanced fields
+  modelSelect.addEventListener("change", () => {
+    const selectedModel = modelSelect.value;
+
+    paramDivs.forEach(div => div.style.display = "none"); // Hide all
+
+    if (selectedModel === "linear_regression") {
+      document.getElementById("linear-params").style.display = "block";
+    } else if (selectedModel === "logistic_regression") {
+      document.getElementById("logistic-params").style.display = "block";
+    }
+    else if (selectedModel === "random_forest") {
+      document.getElementById("rf_advanced_params").style.display = "block";
+    }
+    // Add more conditions for random forest etc. if needed
+  });
+
+  // Toggle button for advanced parameters
+  toggleAdvancedBtn.addEventListener("click", () => {
+    document.getElementById("rand_state").style.display = "block"
+    const visible = advancedParams.style.display === "block";
+    advancedParams.style.display = visible ? "none" : "block";
+
+    // Refresh model-specific div
+    modelSelect.dispatchEvent(new Event("change"));
+  });
     trainForm.addEventListener("submit", function (e) {
       e.preventDefault();
       const formData = new FormData(trainForm);
@@ -123,7 +171,7 @@
 
         if (data.metrics) {
           const container = document.getElementById('evaluation-metrics');
-    container.innerHTML = '<h4>Evaluation Metrics</h4>';
+    container.innerHTML = '<h3>Evaluation Metrics</h3>';
 
     let table = '<table border="1" class="dataframe table"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
 

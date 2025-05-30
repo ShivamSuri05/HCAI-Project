@@ -38,6 +38,37 @@ label {
   justify-content: center;
 }
 
+.title-container h1 {
+    color: #152c49;
+    font-size: 6.5vw;
+    margin: 0;
+    margin-top: 2.5%;
+}
+
+.title-container h2 {
+    color: #152c49;
+    font-size: 4.7vw;
+    margin-top: -1%;
+}
+
+.section-heading{
+  background-color: #152c49;
+  color: white;
+  text-align: center;
+  padding: 1vw;
+  font-weight: bold;
+  font-size: 1.35vw;
+  opacity: 0.9;
+  border-radius: 5px;
+}
+
+.upload-btn{
+  background-color: #152c49;
+  color: white;
+  text-align: center;
+  opacity: 0.9;
+}
+
 .title-text{
   display: inline-block;
 }
@@ -189,4 +220,33 @@ html, body {
     margin-top: 1em ;
     margin-bottom: 1em ;
     text-indent: 22px ;
+}
+
+.dataframe.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 15px;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dataframe.table th,
+.dataframe.table td {
+  border: 1px solid #ddd;
+  padding: 10px 15px;
+  text-align: left;
+}
+
+.dataframe.table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.dataframe.table tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.dataframe.table tr:hover {
+  background-color: #f1f1f1;
 }
