@@ -69,6 +69,20 @@ label {
   opacity: 0.9;
 }
 
+.download-btn{
+  background-color: #152c49;
+  color: white;
+  text-align: center;
+  opacity: 0.9;
+  width: 50vw;
+}
+
+.centered-btns{
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
 .title-text{
   display: inline-block;
 }

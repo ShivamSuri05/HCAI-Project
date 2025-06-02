@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'project2/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="box">
+    <div id="loading" style="
+    background-color: #a8aaaad9;
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+">
+    <span id="loading-msg">Model training in progress<span id="dot-animation">.</span></span>
+</div>
+    <div class="title-container">
+        <div class="title-text">
+            <h1>Human Centric</h1>
+            <h2>Artificial Intelligence</h2>
+        </div>
+        <!-- Reuse your images -->
+        <div id="image1">
+            <img src="{% static 'images/image-1.png' %}" alt="img1" style="width: 15vw;">
+        </div>
+        <div id="nn-gif">
+            <img src="{% static 'images/NN2.gif' %}" alt="Neural Network GIF" style="width: 150px;">
+        </div>
+    </div>
+
+    <div class="main-text">
+        <h2>Project 2</h2>
+        <div class="section-heading">Supervised Text Classification</div>
+        <p>
+            This classifier uses a <strong>TF-IDF vectorizer</strong> to represent movie reviews as numerical vectors, and a <strong>Logistic Regression</strong> model to predict sentiment (positive or negative). TF-IDF vectorizer transforms input text into high-dimensional numerical feature vectors, capturing word importance in the corpus. The full model was trained on the IMDB dataset of 50,000 movie reviews, and evaluated on a held-out test set. The resulting classifier achieved a test accuracy of 89.79%. This model can be retrained or loaded below.
+        </p>
+{% if not msg %}
+    <div class="centered-btns">
+        <form method="post" action="{% url 'project2:train_model' %}">
+            {% csrf_token %}
+            <button class="upload-btn" id="train-model-btn" type="submit">Train Model</button>
+        </form>
+
+        <br>
+
+        <form method="post" action="{% url 'project2:load_model' %}">
+            {% csrf_token %}
+            <button class="upload-btn" id="load-model-btn" type="submit">Load Pretrained Model</button>
+        </form>
+    </div>
+{% endif %}
+        {% if msg %}
+    <div style="margin-top: 20px;">
+        <h3>{{ msg }}</h3>
+        {% if train_model %}
+        <div class="centered-btns">
+            <button class="download-btn" type="button" onclick="location.href=`{% url 'project2:download_model' %}`">Download Model</button>
+            <button class="download-btn" type="button" onclick="location.href=`{% url 'project2:download_vectorizer' %}`">Download Vectorizer</button>
+        </div>
+        {% endif %}
+    </div>
+{% endif %}
+    </div>
+    <script>
+  const loadingDiv = document.getElementById("loading");
+  const dotElement = document.getElementById("dot-animation");
+  const loadingMsg = document.getElementById("loading-msg");
+  let dotInterval;
+
+  // Handle Train Model button
+  document.getElementById("train-model-btn").addEventListener("click", function () {
+    // Hide other buttons (optional)
+    document.getElementById("load-model-btn").style.display = "none";
+
+    // Show loading
+    loadingDiv.style.display = "flex";
+
+    // Start dot animation
+    let dotCount = 1;
+    dotInterval = setInterval(() => {
+      dotCount = (dotCount % 3) + 1;
+      dotElement.textContent = ".".repeat(dotCount);
+    }, 500);
+  });
+
+  // Handle Load Model button (optional: hide Train button)
+  document.getElementById("load-model-btn").addEventListener("click", function () {
+    document.getElementById("train-model-btn").style.display = "none";
+
+    // Show loading
+    loadingDiv.style.display = "flex";
+    loadingMsg.innerHTML = 'Model loading in progress<span id="dot-animation">.</span>';
+    const dotElementL = document.getElementById("dot-animation");
+
+    // Start dot animation
+    let dotCount = 1;
+    dotInterval = setInterval(() => {
+      dotCount = (dotCount % 3) + 1;
+      dotElementL.textContent = ".".repeat(dotCount);
+    }, 500);
+  });
+</script>
+
+</div>
+{% endblock %}
+
+{% block script %}
+{% endblock script %}

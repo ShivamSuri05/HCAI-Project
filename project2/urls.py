@@ -5,4 +5,8 @@ app_name = "project2"
 
 urlpatterns = [
     path('index', views.index, name='index'),
+    path('train/', views.train_model, name='train_model'),
+    path('load/', views.load_model, name='load_model'),
+    path('download/model/', views.download_model, name='download_model'),
+    path('download/vectorizer/', views.download_vectorizer, name='download_vectorizer'),
 ]
