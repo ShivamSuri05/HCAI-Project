@@ -1,0 +1,125 @@
+#full-form p {
+    margin: 2vw;
+    text-align: center;
+}
+
+#full-form {
+    text-align: center;
+}
+
+#full-form table{
+    text-align: center;
+    margin: 0 auto;
+}
+
+#full-form h3{
+    margin: 3vw auto 0.5vw auto;
+}
+
+#full-form ul{
+    margin: 0 auto;
+    text-align: center;
+}
+
+#full-form ul li {
+  list-style: none;
+}
+
+#full-form select{
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    font-size: 16px;
+    color: #333;
+}
+
+#generate-plots-btn {
+    margin: 3vw auto;
+    opacity: 0.9;
+}
+
+#plots-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+#plots-section div{
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+#plots-section div:last-child {
+  grid-column: 1 / -1;  /* spans from first to last column */
+  border: none;
+}
+
+#train-model-section div {
+    border: none;
+}
+
+#toggle-advanced {
+    margin: 3vw auto;
+    opacity: 0.9;
+    color: black;
+    background-color: #ccc;
+}
+
+.model-params {
+  border: 1px solid #ddd;
+  padding: 15px 20px;
+  max-width: 400px;
+  font-family: Arial, sans-serif;
+  margin: 0 auto;
+}
+
+.model-params label {
+  display: inline-block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.model-params input[type="number"] {
+  width: 100%;
+  padding: 7px 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.model-params input[type="number"]:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+.model-params small {
+  display: block;
+  margin-top: -12px;
+  margin-bottom: 12px;
+  color: #666;
+  font-style: italic;
+  font-size: 12px;
+}
+
+#train-model-form button{
+    opacity: 0.9;
+}
+
+#plots-section img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: auto;
+}
+
+#train-model-btn {
+  width: 43.6vw;
+}
+
+#load-model-btn {
+  width: 43.6vw;
+}
