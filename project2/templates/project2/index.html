@@ -2,6 +2,8 @@
 
 {% load static %}
 
+{% load custom_filters %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'project2/style.css' %}">
 {% endblock %}
@@ -58,17 +60,106 @@
         </form>
     </div>
 {% endif %}
-        {% if msg %}
+        {% if model_accuracy %}
     <div style="margin-top: 20px;">
-        <h3>{{ msg }}</h3>
-        {% if train_model %}
+        <h3>Model trained successfully with accuracy: {{ model_accuracy|floatformat:2 }}%</h3>
         <div class="centered-btns">
             <button class="download-btn" type="button" onclick="location.href=`{% url 'project2:download_model' %}`">Download Model</button>
             <button class="download-btn" type="button" onclick="location.href=`{% url 'project2:download_vectorizer' %}`">Download Vectorizer</button>
         </div>
-        {% endif %}
     </div>
 {% endif %}
+{% if loaded_model_accuracy %}
+    <div style="margin-top: 20px;">
+        <h3>Model Loaded successfully with accuracy: {{ loaded_model_accuracy|floatformat:2 }}%</h3>
+    </div>
+{% endif %}
+<hr style="margin: 40px 0;">
+
+<div class="section-heading">Pool-Based Active Learning</div>
+
+<p>
+    Active learning starts with a small set of labeled samples and iteratively selects the most informative unlabeled samples using a chosen strategy. You can experiment with different utility functions below.
+</p>
+
+<form method="post" action="{% url 'project2:active_learning' %}">
+    {% csrf_token %}
+    <div id="input-section">
+    <div class="ac-params">
+    <label for="strategy">Select Active Learning Strategy:</label>
+    <select name="strategy" id="strategy" style="margin: 10px 0;">
+        <option value="uncertainty">Uncertainty Sampling</option>
+        <option value="margin">Margin Sampling</option>
+        <option value="random">Random Sampling</option>
+        <option value="all">All of the Above</option>
+    </select>
+    </div>
+    
+    <div class="ac-params">
+    <label for="initial_size">Initial Labeled Dataset size:</label>
+    <input type="number" name="initial_size" id="initial_size" value="100" min="1" max="50000" required>
+    </div>
+ 
+    <div class="ac-params">
+    <label for="max_iters">Number of Iterations:</label>
+    <input type="number" name="max_iters" id="max_iters" value="10" min="1" max="100" required>
+    </div>
+
+    <div class="ac-params">
+    <label for="batch_size">Batch Size:</label>
+    <input type="number" name="batch_size" id="batch_size" value="100" min="1" max="1000" required>
+    </div>
+
+    <div class="ac-params">
+    <label for="stop_cond">Minimum Improvement Threshold in Accuracy (Stopping Condition):</label>
+    <input type="number" name="stop_cond" id="stop_cond" value="0.001" step="0.0001" min="0" max="1">
+    </div>
+    </div>
+    <button type="submit" class="upload-btn" id="active-lrn-btn">Start Active Learning</button>
+</form>
+
+{% if accuracy_scores %}
+  <div class="section-heading">Accuracy Over Active Learning Iterations</div>
+  <p class="al-desc" style="text-align: center;"><strong>Initial Dataset Size:</strong> {{initial_size}} <br><strong>Strategy:</strong> {{strategy}} <br><strong>Batch Size:</strong> {{batch_size}}</p>
+  <table border="1" class="dataframe table">
+    <tr><th>Iteration</th><th>Accuracy</th></tr>
+    {% for acc in accuracy_scores %}
+      <tr><td>{{ forloop.counter }}</td><td>{{ acc|floatformat:4 }}</td></tr>
+    {% endfor %}
+  </table>
+  <div class="section-heading">Active Learning plot for different iterations</div>
+  <div class="plot-images"><img src="{{ plot_url }}" alt="Accuracy plot" style="margin-top: 20px; max-width: 100%;"></div>
+{% endif %}
+
+{% if comparison_results %}
+  <div class="section-heading">Accuracy Over Active Learning Iterations for different Strategies</div>
+  <p class="al-desc" style="text-align: center;">Active Learning performed on <strong>Initial Dataset Size:</strong> {{initial_size}} and <strong>Batch Size:</strong> {{batch_size}} for all strategies</p>
+  <table border="1" class="dataframe table">
+    <thead>
+      <tr>
+        <th>Iteration</th>
+        <th>Uncertainty</th>
+        <th>Margin</th>
+        <th>Random</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for value in max_iters %}
+<tr>
+  <td>{{ forloop.counter }}</td>
+  <td>{{ comparison_results.uncertainty|index:forloop.counter0}}</td>
+  <td>{{ comparison_results.margin|index:forloop.counter0}}</td>
+  <td>{{ comparison_results.random|index:forloop.counter0}}</td>
+</tr>
+{% endfor %}
+    </tbody>
+  </table>
+
+  <div class="section-heading">Comparison Plot for different strategies</div>
+  <div class="plot-images"><img src="{{ plot_url }}" alt="Comparison plot" style="margin-top: 20px; max-width: 100%;"></div>
+{% endif %}
+
+
     </div>
     <script>
   const loadingDiv = document.getElementById("loading");
@@ -107,6 +198,53 @@
       dotCount = (dotCount % 3) + 1;
       dotElementL.textContent = ".".repeat(dotCount);
     }, 500);
+  });
+
+  document.getElementById("active-lrn-btn").addEventListener("click", function () {
+    // Show loading
+    loadingDiv.style.display = "flex";
+    loadingMsg.innerHTML = 'Active Learning in progress<span id="dot-animation">.</span><p id="progress-status" style="margin-top: 10px;">0%</p>';
+    const dotElementL = document.getElementById("dot-animation");
+    const progressStatus = document.getElementById("progress-status");
+
+    // Start dot animation
+    let dotCount = 1;
+    dotInterval = setInterval(() => {
+      dotCount = (dotCount % 3) + 1;
+      dotElementL.textContent = ".".repeat(dotCount);
+    }, 500);
+
+    function pollProgress() {
+      fetch("{% url 'project2:get_progress' %}")
+        .then(response => response.json())
+        .then(data => {
+          const percent = data.percent;
+          const iter = data.iteration;
+          const acc = data.accuracy;
+          const strategy = data.strategy;
+
+          if (strategy){
+            progressStatus.innerText = `Strategy: ${strategy} - Iteration ${iter} - ${percent}% Completed - Current Accuracy: ${acc}`;
+          }
+          else{
+            progressStatus.innerText = `Iteration ${iter} - ${percent}% Completed - Current Accuracy: ${acc}`;
+          }
+
+          if (percent < 100) {
+            setTimeout(pollProgress, 5000);
+          } else {
+            progressStatus.innerText += " (Completed)";
+            clearInterval(dotInterval);
+          }
+        })
+        .catch(error => {
+          progressStatus.innerText = "Error fetching progress.";
+          console.error(error);
+          clearInterval(dotInterval);
+        });
+    }
+
+    pollProgress();
   });
 </script>
 

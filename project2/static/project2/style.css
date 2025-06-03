@@ -123,3 +123,48 @@
 #load-model-btn {
   width: 43.6vw;
 }
+
+.al-desc{
+  text-align: center;
+}
+
+.ac-params {
+  width: 40vw;
+}
+
+.ac-params label {
+  display: inline-block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.ac-params input[type="number"] {
+  width: 100%;
+  padding: 7px 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.ac-params input[type="number"]:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+.ac-params small {
+  display: block;
+  margin-top: -12px;
+  margin-bottom: 12px;
+  color: #666;
+  font-style: italic;
+  font-size: 12px;
+}
+
+#input-section{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
