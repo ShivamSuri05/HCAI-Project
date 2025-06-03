@@ -9,4 +9,6 @@ urlpatterns = [
     path('load/', views.load_model, name='load_model'),
     path('download/model/', views.download_model, name='download_model'),
     path('download/vectorizer/', views.download_vectorizer, name='download_vectorizer'),
+    path('active_learning/', views.active_learning_view, name='active_learning'),
+    path('progress/', views.get_active_learning_progress, name='get_progress'),
 ]

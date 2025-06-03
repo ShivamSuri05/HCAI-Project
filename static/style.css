@@ -60,6 +60,7 @@ label {
   font-size: 1.35vw;
   opacity: 0.9;
   border-radius: 5px;
+  margin: 40px 0;
 }
 
 .upload-btn{
@@ -263,4 +264,9 @@ html, body {
 
 .dataframe.table tr:hover {
   background-color: #f1f1f1;
+}
+
+.plot-images{
+  display: flex;
+  justify-content: center;
 }
