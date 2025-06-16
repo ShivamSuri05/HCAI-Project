@@ -9,6 +9,9 @@ from django.template import loader
 
 
 def index(request):
+    if 'decision_context' in request.session:
+        del request.session['decision_context']
+    
     template = loader.get_template("home/index.html")
     
     

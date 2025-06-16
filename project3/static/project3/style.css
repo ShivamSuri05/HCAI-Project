@@ -1,0 +1,31 @@
+.dc-tree{
+    width: 90vw;
+}
+
+.center{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.row{
+    display: flex;
+    gap: 10vw;
+}
+
+.alert{
+    color: red;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#sp-tree{
+    margin: 3vw auto;
+}
+
+.vw20{
+    width: 20vw;
+}

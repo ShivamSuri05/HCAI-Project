@@ -1,3 +1,10 @@
 Django==4.2.10
 numpy>=1.24
+pandas
+scikit-learn
 matplotlib>=3.7
+graphviz
+palmerpenguins
+sortedcontainers
+gmpy2
+gosdt==0.1.7
