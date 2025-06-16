@@ -24,6 +24,8 @@ from sklearn.metrics import accuracy_score, r2_score
 
 
 def upload_csv(request):
+    if 'decision_context' in request.session:
+        del request.session['decision_context']
     result = None
     error = None
     context = {}

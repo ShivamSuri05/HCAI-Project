@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load custom_filters %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'project3/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="box">
+    <div id="loading" style="
+    background-color: #a8aaaad9;
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+">
+    <span id="loading-msg">Decision Tree creation in progress<span id="dot-animation">.</span></span>
+</div>
+    <div class="title-container">
+        <div class="title-text">
+            <h1>Human Centric</h1>
+            <h2>Artificial Intelligence</h2>
+        </div>
+        <!-- Reuse your images -->
+        <div id="image1">
+            <img src="{% static 'images/image-1.png' %}" alt="img1" style="width: 15vw;">
+        </div>
+        <div id="nn-gif">
+            <img src="{% static 'images/NN2.gif' %}" alt="Neural Network GIF" style="width: 150px;">
+        </div>
+    </div>
+    <div class="main-text">
+        <h2>Project 3</h2>
+        <div class="section-heading">Penguin Decision Tree Classifier</div>
+
+    {% if not accuracy %}
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="upload-btn" id="fit-dc-tree">Train Regular Decision Tree on Penguins Dataset</button>
+    </form>
+    {% endif %}
+
+    {% if accuracy %}
+    <div class="center">
+        <img class="dc-tree" src="{{ tree_image }}" alt="Decision Tree">
+        <div class="row">
+            <div class="section-heading">Accuracy: {{ accuracy }}</div>
+            <div class="section-heading">Number of Leaves: {{ num_leaves }}</div>
+        </div>
+    </div>
+    {% endif %}
+    <div class="section-heading">Sparse Decision Tree</div>
+    <form method="post" action="{% url 'project3:index' %}">
+  {% csrf_token %}
+  <div class="center">
+  <label for="lambda">Adjust Model's Sparsity (λ):</label>
+  <input type="range" name="lambda" min="0.001" max="1" step="0.001"
+         value="{{ lambda_value|default:0.5 }}" oninput="this.nextElementSibling.value = this.value">
+  <output>{{ lambda_value|default:0.5 }}</output>
+  
+  <div style="margin-top: 20px;">
+      <label for="time_limit">Time Limit for training Sparse Decision Tree (seconds):</label>
+      <input type="number" name="time_limit" min="1" max="600" step="1"
+             value="{{ time_limit|default:60 }}" style="width: 60px;">
+    </div>
+  </div>
+  <br>
+  <button type="submit" name="model_type" value="sparse" class="upload-btn">Train Sparse Decision Tree</button>
+</form>
+
+<div class="alert">
+    {% if gosdt_error %}
+            <p>Training failed with λ={{ lambda_value }}. Try a smaller λ value</p>
+    {% endif %}
+</div>
+
+    {% if sparse_dc_accuracy %}
+    <div class="center">
+    <img class="dc-tree" id="sp-tree" src="{{ sp_tree_image }}" alt="Sparse Decision Tree">
+    <div class="row">
+        <div class="section-heading vw20">λ Value: {{ lambda_value }}</div>
+        <div class="section-heading vw20">Training Time (s): {{ sp_training_time }}</div>
+        <div class="section-heading vw20">Number of Iterations: {{ sp_iterations }}</div>
+    </div>
+    <div class="row">
+        <div class="section-heading vw20">Sparse DC Accuracy: {{ sparse_dc_accuracy }}</div>
+        <div class="section-heading vw20">Number of Leaves: {{ sp_num_leaves }}</div>
+        <div class="section-heading vw20">Number of Nodes: {{ sp_num_nodes }}</div>
+    </div>
+    </div>
+    {% endif %}
+
+    <div class="section-heading">Logistic Regression</div>
+
+    </div>
+    <script>
+        const loadingDiv = document.getElementById("loading");
+        const dotElement = document.getElementById("dot-animation");
+
+        document.getElementById("fit-dc-tree").addEventListener("click", function () {
+        // Show loading
+        loadingDiv.style.display = "flex";
+
+        // Start dot animation
+        let dotCount = 1;
+        dotInterval = setInterval(() => {
+          dotCount = (dotCount % 3) + 1;
+          dotElement.textContent = ".".repeat(dotCount);
+        }, 500);
+  });
+    </script>
+</div>
+
+{% endblock %}
+
+{% block script %}
+{% endblock script %}

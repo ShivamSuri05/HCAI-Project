@@ -27,6 +27,9 @@ def clean_html(text):
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def index(request):
+    if 'decision_context' in request.session:
+        del request.session['decision_context']
+    
     accuracy = request.session.pop('model_accuracy', None)
     loaded_acc = request.session.pop('loaded_model_accuracy', None)
     context = {
