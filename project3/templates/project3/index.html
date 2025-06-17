@@ -62,11 +62,18 @@
     <form method="post" action="{% url 'project3:index' %}">
   {% csrf_token %}
   <div class="center">
-  <label for="lambda">Adjust Model's Sparsity (λ):</label>
-  <input type="range" name="lambda" min="0.001" max="1" step="0.001"
-         value="{{ lambda_value|default:0.5 }}" oninput="this.nextElementSibling.value = this.value">
-  <output>{{ lambda_value|default:0.5 }}</output>
-  
+    <label for="lambda">Adjust Model's Sparsity (λ):
+    <br>
+    <span class="info">Higher λ means fewer features used</span>
+    </label>
+    <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
+  <span>0.001</span>
+  <input type="range" name="lambda" id="lambda" style="width: 25vw;" min="0.001" max="1" step="0.001"
+         value="{{ lambda_value|default:0.5 }}" oninput='document.getElementById("lambdaValue").value = this.value'>
+  <span>1</span>
+  </div>
+  <output id="lambdaValue">{{ lambda_value|default:0.5 }}</output>
+
   <div style="margin-top: 20px;">
       <label for="time_limit">Time Limit for training Sparse Decision Tree (seconds):</label>
       <input type="number" name="time_limit" min="1" max="600" step="1"
@@ -74,7 +81,7 @@
     </div>
   </div>
   <br>
-  <button type="submit" name="model_type" value="sparse" class="upload-btn">Train Sparse Decision Tree</button>
+  <button type="submit" name="model_type" value="sparse" class="upload-btn" id="fit-sp-tree">Train Sparse Decision Tree</button>
 </form>
 
 <div class="alert">
@@ -100,23 +107,115 @@
     {% endif %}
 
     <div class="section-heading">Logistic Regression</div>
+    {% if not lr_accuracy %}
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="model_type" value="lr" class="upload-btn" id="train-lr">Train Logistic Regression on Penguins Dataset</button>
+    </form>
+    {% endif %}
 
+    {% if lr_accuracy %}
+    <div class="center">
+        <div class="row">
+            <div class="section-heading">Logistic Regression Accuracy: {{ lr_accuracy }}</div>
+            <div class="section-heading">Number of Features used: {{ lr_num_features_used }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section-heading">Sparse Logistic Regression</div>
+    <form method="post" action="{% url 'project3:index' %}">
+  {% csrf_token %}
+  <div class="center">
+    <label for="lr_lambda">Adjust Logistic Regression Model's Sparsity (λ):
+    <br>
+    <span class="info">Higher λ means fewer features used</span>
+    </label>
+    <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
+  <span>1</span>
+  <input type="range" name="lr_lambda" id="lr_lambda" style="width: 70vw;" min="0.01" max="400" step="0.01"
+         value="{{ lr_lambda_value|default:5 }}" oninput='document.getElementById("lrlambdaValue").value = this.value'>
+  <span>400</span>
+  </div>
+  <output id="lrlambdaValue">{{ lr_lambda_value|default:5 }}</output>
+  </div>
+  <br>
+  <button type="submit" name="model_type" value="lr_sparse" class="upload-btn" id="train-sp-lr">Train Sparse Logistic Regression</button>
+</form>
+
+    {% if sp_lr_accuracy %}
+    <div class="center">
+        <div class="row">
+            <div class="section-heading vw30">λ Value: {{ sp_lr_lambda_value }}</div>
+            <div class="section-heading vw30">Number of Iterations: {{ sp_lr_iterations }}</div>
+        </div>
+        <div class="row">
+            <div class="section-heading vw30">Sparse Logistic Regression Accuracy: {{ sp_lr_accuracy }}</div>
+            <div class="section-heading vw30">Number of Features used: {{ sp_lr_num_features_used }}</div>
+        </div>
+    </div>
+    {% endif %}
+    
     </div>
     <script>
         const loadingDiv = document.getElementById("loading");
-        const dotElement = document.getElementById("dot-animation");
+  const dotElement = document.getElementById("dot-animation");
+  const loadingMsg = document.getElementById("loading-msg");
+  let dotInterval;
 
-        document.getElementById("fit-dc-tree").addEventListener("click", function () {
-        // Show loading
-        loadingDiv.style.display = "flex";
+  const dcButton = document.getElementById("fit-dc-tree");
+  if (dcButton) {
+    dcButton.addEventListener("click", () => {
+      loadingDiv.style.display = "flex";
+      let dotCount = 1;
+      dotInterval = setInterval(() => {
+        dotCount = (dotCount % 3) + 1;
+        dotElement.textContent = ".".repeat(dotCount);
+      }, 500);
+    });
+  }
 
-        // Start dot animation
-        let dotCount = 1;
-        dotInterval = setInterval(() => {
-          dotCount = (dotCount % 3) + 1;
-          dotElement.textContent = ".".repeat(dotCount);
-        }, 500);
-  });
+  const spButton = document.getElementById("fit-sp-tree");
+  if (spButton) {
+    spButton.addEventListener("click", () => {
+      loadingDiv.style.display = "flex";
+      loadingMsg.innerHTML = 'Sparse Tree creation in progress<span id="dot-animation">.</span>';
+      const dotElementL = document.getElementById("dot-animation");
+      let dotCount = 1;
+      dotInterval = setInterval(() => {
+        dotCount = (dotCount % 3) + 1;
+        dotElementL.textContent = ".".repeat(dotCount);
+      }, 500);
+    });
+  }
+
+  const lrButton = document.getElementById("train-lr");
+  if (lrButton) {
+    lrButton.addEventListener("click", () => {
+      loadingDiv.style.display = "flex";
+      loadingMsg.innerHTML = 'Logistic Regression Training in progress<span id="dot-animation">.</span>';
+      const dotElementLR = document.getElementById("dot-animation");
+      let dotCount = 1;
+      dotInterval = setInterval(() => {
+        dotCount = (dotCount % 3) + 1;
+        dotElementLR.textContent = ".".repeat(dotCount);
+      }, 500);
+    });
+  }
+
+  const splrButton = document.getElementById("train-sp-lr");
+  if (splrButton) {
+    splrButton.addEventListener("click", () => {
+      loadingDiv.style.display = "flex";
+      loadingMsg.innerHTML = 'Sparse Logistic Regression Training in progress<span id="dot-animation">.</span>';
+      const dotElementLRSP = document.getElementById("dot-animation");
+      let dotCount = 1;
+      dotInterval = setInterval(() => {
+        dotCount = (dotCount % 3) + 1;
+        dotElementLRSP.textContent = ".".repeat(dotCount);
+      }, 500);
+    });
+  }
     </script>
 </div>
 

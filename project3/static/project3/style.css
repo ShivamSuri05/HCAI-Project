@@ -29,3 +29,15 @@
 .vw20{
     width: 20vw;
 }
+
+.vw30{
+    width: 30vw;
+}
+
+.info{
+    display: block;
+    color: #808080de;
+    text-align: center;
+    margin-top: 0.25vw;
+    font-size: 1rem;
+}
