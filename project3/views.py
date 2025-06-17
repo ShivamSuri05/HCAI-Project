@@ -15,6 +15,9 @@ sklearn.base.check_X_y = val.check_X_y
 from gosdt import GOSDT
 from graphviz import Digraph
 import time
+from sklearn.linear_model import LogisticRegression
+import numpy as np
+
 
 def index(request):
     context = request.session.get('decision_context', {})
@@ -22,44 +25,58 @@ def index(request):
     if request.method == "POST":
         if 'model_type' in request.POST and request.POST['model_type'] == 'sparse':
             context.update(sparse_tree(request))
+        elif 'model_type' in request.POST and request.POST['model_type'] == 'lr':
+            context.update(logistic_regression())
+        elif 'model_type' in request.POST and request.POST['model_type'] == 'lr_sparse':
+            context.update(sparse_logistic_regression(request))
         else:
-            # Load and preprocess data
-            penguins = load_penguins()
-            penguins.dropna(inplace=True)
-            penguins['sex'] = penguins['sex'].astype('category').cat.codes
-            penguins['island'] = penguins['island'].astype('category').cat.codes
-            X = penguins.drop(columns=['species'])
-            y = penguins['species']
-
-            # Train/test split
-            X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-            # Model
-            clf = DecisionTreeClassifier(random_state=42)
-            clf.fit(X_train, y_train)
-            y_pred = clf.predict(X_test)
-            accuracy = accuracy_score(y_test, y_pred)
-            num_leaves = clf.get_n_leaves()
-
-            # Plot the tree
-            fig, ax = plt.subplots(figsize=(16, 9))
-            plot_tree(clf, feature_names=X.columns, class_names=clf.classes_, filled=True, ax=ax)
-            buf = io.BytesIO()
-            plt.savefig(buf, format='png')
-            plt.close(fig)
-            buf.seek(0)
-            image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-            image_uri = 'data:image/png;base64,' + image_base64
-
-            context.update({
-                'accuracy': f"{accuracy:.4f}",
-                'num_leaves': int(num_leaves),
-                'tree_image': image_uri,
-                'gosdt_error': None
-            })
+            context.update(decision_tree())
 
     request.session['decision_context'] = context
     return render(request, 'project3/index.html', context)
+
+
+def load_and_clean_dataset():
+    penguins = load_penguins()
+    penguins.dropna(inplace=True)
+    penguins['sex'] = penguins['sex'].astype('category').cat.codes
+    penguins['island'] = penguins['island'].astype('category').cat.codes
+    X = penguins.drop(columns=['species'])
+    y = penguins['species']
+    return X, y
+
+
+def decision_tree():
+    X, y = load_and_clean_dataset()
+
+    # Train/test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    # Model
+    clf = DecisionTreeClassifier(random_state=42)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    num_leaves = clf.get_n_leaves()
+
+    # Plot the tree
+    fig, ax = plt.subplots(figsize=(16, 9))
+    plot_tree(clf, feature_names=X.columns, class_names=clf.classes_, filled=True, ax=ax)
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    plt.close(fig)
+    buf.seek(0)
+    image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    image_uri = 'data:image/png;base64,' + image_base64
+
+    context = {
+        'accuracy': f"{accuracy:.4f}",
+        'num_leaves': int(num_leaves),
+        'tree_image': image_uri,
+        'gosdt_error': None
+    }
+
+    return context
 
 
 def build_tree(dot, node_dict, node_id=0, parent_id=None, edge_label=""):
@@ -100,77 +117,120 @@ def visualize_gosdt_repr(tree_repr_dict):
 
 
 def sparse_tree(request):
-    #context = {}
-    if request.method == "POST":
-        lambda_value = float(request.POST.get("lambda", 0.01))
-        time_limit = float(request.POST.get("time_limit", 60))
+    lambda_value = float(request.POST.get("lambda", 0.01))
+    time_limit = float(request.POST.get("time_limit", 60))
 
-        data = load_penguins()
-        data.dropna(inplace=True)
-        data['island'] = data['island'].astype('category').cat.codes
-        data['sex'] = data['sex'].astype('category').cat.codes
-        X = data.drop(columns=['species'])
-        y = data['species'].astype('category').cat.codes
+    X, y = load_and_clean_dataset()
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-        config = {
-            "regularization": lambda_value,
-            "depth_budget": 10,
-            "time_limit": time_limit,
-            "similar_support": False,
-            "verbose":False
-        }
+    config = {
+        "regularization": lambda_value,
+        "depth_budget": 10,
+        "time_limit": time_limit,
+        "similar_support": False,
+        "verbose":False
+    }
 
-        try:
-            model = GOSDT(config)
-            
-            start = time.time()
-            model1=model.fit(X_train, y_train)
-            train_time = time.time() - start
-        except Exception as gosdt_error:
-            context = {
-                    'gosdt_error': f"Training failed with λ={lambda_value}. Try a smaller value. Error: {str(gosdt_error)}",
-                    'lambda_value': lambda_value,
-                    'sparse_dc_accuracy': None
-                }
-
-            
-            return context
+    try:
+        model = GOSDT(config)  
+        start = time.time()
+        model1=model.fit(X_train, y_train)
+        train_time = time.time() - start
+    except Exception as gosdt_error:
+        context = {
+            'gosdt_error': f"Training failed with λ={lambda_value}. Try a smaller value. Error: {str(gosdt_error)}",
+            'lambda_value': lambda_value,
+            'sparse_dc_accuracy': None
+        }  
+        return context
         
 
-        #print("evaluate the model, extracting tree and scores", flush=True)
-        n_leaves = model.leaves()
-        n_nodes = model.nodes()
-        iterations = model.iterations
+    n_leaves = model.leaves()
+    n_nodes = model.nodes()
+    iterations = model.iterations
 
-        #print("Model training time: {}".format(train_time))
-        #print("# of leaves: {}".format(n_leaves))
-        #print(model.tree)
+    predictions = model.predict(X_test)
+    accuracy = accuracy_score(y_test, predictions)
 
-        predictions = model.predict(X_test)
-        #print(predictions)
-        accuracy = accuracy_score(y_test, predictions)
-        #print(f'Accuracy: {accuracy:.4f}')
+    tree_dict = model.tree.__repr__()
+    dot = visualize_gosdt_repr(tree_dict)
 
-        tree_dict = model.tree.__repr__()
-        dot = visualize_gosdt_repr(tree_dict)
-
-        graph_bytes = dot.pipe(format='png')
-        image_base64 = base64.b64encode(graph_bytes).decode('utf-8')
-        image_uri = 'data:image/png;base64,' + image_base64
+    graph_bytes = dot.pipe(format='png')
+    image_base64 = base64.b64encode(graph_bytes).decode('utf-8')
+    image_uri = 'data:image/png;base64,' + image_base64
 
 
-        context = {
-            "lambda_value": float(lambda_value),
-            "sparse_dc_accuracy": f"{accuracy:.4f}",
-            "sp_num_leaves": int(n_leaves),
-            "sp_num_nodes": int(n_nodes),
-            "sp_tree_image": image_uri,
-            "sp_training_time": f"{train_time:.3f}",
-            "sp_iterations": int(iterations),
-            "gosdt_error": None
-        }
-        return context
+    context = {
+        "lambda_value": float(lambda_value),
+        "sparse_dc_accuracy": f"{accuracy:.4f}",
+        "sp_num_leaves": int(n_leaves),
+        "sp_num_nodes": int(n_nodes),
+        "sp_tree_image": image_uri,
+        "sp_training_time": f"{train_time:.3f}",
+        "sp_iterations": int(iterations),
+        "gosdt_error": None
+    }
 
-    #return render(request, "project3/index.html", context)
+    return context
+
+
+def logistic_regression():
+    X, y = load_and_clean_dataset()
+
+    # Train/test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    # Model (no sparsity / penalty)
+    model = LogisticRegression(penalty=None, solver='lbfgs', max_iter=1000)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+
+    # Number of non-zero features (used features)
+    if model.coef_.ndim == 1:
+        used_features = np.count_nonzero(model.coef_)
+    else:
+        used_features = np.count_nonzero(np.any(model.coef_ != 0, axis=0))
+
+    context = {
+        'lr_accuracy': f"{accuracy:.4f}",
+        'lr_num_features_used': int(used_features)
+    }
+
+    return context
+
+
+def sparse_logistic_regression(request):
+    lambda_value = float(request.POST.get("lr_lambda", 0.01))
+    X, y = load_and_clean_dataset()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    # Convert λ to C (inverse regularization strength)
+    try:
+        lambda_float = float(lambda_value)
+        C_value = 1.0 / lambda_float if lambda_float != 0 else 1e6  # Avoid division by zero
+    except ValueError:
+        C_value = 1.0
+
+    # Use L1 penalty for sparsity, saga supports L1 for multiclass
+    model = LogisticRegression(penalty='l1', solver='saga', C=C_value, max_iter=10000)
+    model.fit(X_train, y_train)
+
+    # Predict and evaluate
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+
+    print(model.n_iter_[0])
+
+    # Count how many features are used (non-zero in any class)
+    used_features = np.count_nonzero(np.any(model.coef_ != 0, axis=0))
+
+    context = {
+        'sp_lr_accuracy': f"{accuracy:.4f}",
+        'sp_lr_num_features_used': int(used_features),
+        'sp_lr_lambda_value': f"{lambda_float:.3f}",
+        'sp_lr_iterations': int(model.n_iter_[0])
+    }
+
+    return context
