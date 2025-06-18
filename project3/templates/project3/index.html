@@ -47,6 +47,10 @@
         {% csrf_token %}
         <button type="submit" class="upload-btn" id="fit-dc-tree">Train Regular Decision Tree on Penguins Dataset</button>
     </form>
+    <script>
+        sessionStorage.removeItem('modelTrained');
+        document.getElementById("train-first-overlay").style.display = 'flex';
+    </script>
     {% endif %}
 
     {% if accuracy %}
@@ -57,6 +61,9 @@
             <div class="section-heading">Number of Leaves: {{ num_leaves }}</div>
         </div>
     </div>
+    <script>
+        document.getElementById("train-first-overlay").style.display = 'none';
+    </script>
     {% endif %}
     <div class="section-heading">Sparse Decision Tree</div>
     <form method="post" action="{% url 'project3:index' %}">
@@ -155,15 +162,152 @@
         </div>
     </div>
     {% endif %}
-    
+
+    <div class="section-heading">Counterfactual Explanations</div>
+    <div class="block">
+        <div id="train-first-overlay" class="train-first-overlay">
+  <div class="train-first-message">
+    <h2>Please Train the Decision Tree Model First</h2>
+    <p>Click the "Train Regular Decision Tree on Penguins Dataset" button above to enable this section</p>
+    <button onclick="document.getElementById('fit-dc-tree').click()">
+      Click Here
+    </button>
+  </div>
+</div>
+    <form method="POST" id="counterfactual-form">
+    {% csrf_token %}
+     <div class="center left">
+    <div style="margin-top: 20px;">
+    <label for="example-select">Select Example:</label>
+    <select id="example-select" name="example_index" required>
+      <option value="" disabled selected>Select an example</option>
+      {% for example in examples %}
+        <option value="{{ example.index }}" 
+                data-truelabel="{{ example.true_label }}" 
+                data-features="{{ example.features|safe }}">
+          #{{ example.index }} — Features: 
+          {% for key, value in example.features.items %}
+            {{ key }}={{ value }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </option>
+      {% endfor %}
+    </select>
+    </div>
+
+    <div style="margin-top: 20px;">
+    <p>
+      True Label: <span id="true-label-display" style="font-weight: bold;">--</span>
+    </p>
+    </div>
+
+    <div style="margin-top: 20px;">
+    <label for="target-label-select">Select Target Label (different from true label):</label>
+    <select id="target-label-select" name="target_label" required>
+      <option value="" selected>Select target label</option>
+      {% for label in class_labels %}
+        <option value="{{ label }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+    </div>
+
+    <div style="margin-top: 20px;">
+    <label for="topk">Select number of Counterfactual Explanations to generate:</label>
+    <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px;">
+    <span>1</span>
+    <input type="range" id="topk" name="topk" min="1" max="10" step="1"
+           value="{{ topk|default:5 }}" style="width: 60vw;" oninput='document.getElementById("kValue").value = this.value'>
+    <span>10</span>
+    </div>
+    <output id="kValue" style="display: block; text-align: center; margin-bottom: 2vw;">{{ topk|default:5 }}</output>
+    </div>
+</div>
+    <button type="submit" name="model_type" value="counterfactual" class="upload-btn" id="gen-counter">Generate Counterfactuals</button>
+  </form>
+  </div>
+
+  {% if counterfactuals %}
+  <div class="center">
+        <div class="row">
+            <div class="section-heading vw72" style="font-size: medium;">Selected Example: {{ selected_example }}</div>
+        </div>
+        <div class="row">
+            <div class="section-heading vw30" style="font-size: medium;">True Label: {{ true_label }}</div>
+            <div class="section-heading vw30" style="font-size: medium;">Target Label: {{ target_label }}</div>
+        </div>
+    <div class="section-heading vw72" style="font-size: medium;">Top {{ counterfactuals|length }} Counterfactuals:</div>
+    <table border="1" class="dataframe table" style="width: 74vw;">
+      <thead>
+        <tr>
+          <th>S.No</th>
+          {% for col in feature_names %}
+            <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in counterfactuals %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            {% for value in row %}
+              <td>{{ value }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% elif message%}
+        <div class="section-heading" style="font-size: medium;">{{message}}</div>
+    </div>
+  {% endif %}
     </div>
     <script>
         const loadingDiv = document.getElementById("loading");
   const dotElement = document.getElementById("dot-animation");
   const loadingMsg = document.getElementById("loading-msg");
+  const blockDiv = document.querySelector(".block");
+   const dcButton = document.getElementById("fit-dc-tree");
+   const overlay = document.getElementById("train-first-overlay");
+   const isTrained = sessionStorage.getItem('modelTrained') == 'true';
   let dotInterval;
 
-  const dcButton = document.getElementById("fit-dc-tree");
+  if (isTrained){
+    overlay.style.display = 'none';
+  }
+  function disableAllElements(container, shouldDisable) {
+    // Get all form controls within the container
+    const formControls = container.querySelectorAll(
+      'select, option, p, span, output, label, input, textarea, [tabindex]'
+    );
+    
+    formControls.forEach(element => {
+      if (element.id !== "fit-dc-tree") {  // Don't disable the train button itself
+        element.disabled = shouldDisable;
+        
+        // Optional: Add/remove blur class for visual effect
+        if (shouldDisable) {
+          element.classList.add('disabled-element');
+        } else {
+          element.classList.remove('disabled-element');
+        }
+      }
+    });
+  };
+
+  if (dcButton && blockDiv && overlay && !isTrained) {
+
+    overlay.style.display = 'flex';
+    // Initially disable all interactive elements
+    disableAllElements(blockDiv, true);
+    
+    dcButton.addEventListener("click", function() {
+        overlay.style.display = 'none';
+      // Enable all elements when train button is clicked
+      disableAllElements(blockDiv, false);
+      sessionStorage.setItem('modelTrained', 'true');
+    });
+  }
+
+ 
   if (dcButton) {
     dcButton.addEventListener("click", () => {
       loadingDiv.style.display = "flex";
@@ -179,7 +323,7 @@
   if (spButton) {
     spButton.addEventListener("click", () => {
       loadingDiv.style.display = "flex";
-      loadingMsg.innerHTML = 'Sparse Tree creation in progress<span id="dot-animation">.</span>';
+      loadingMsg.innerHTML = 'Sparse Decision Tree creation in progress<span id="dot-animation">.</span>';
       const dotElementL = document.getElementById("dot-animation");
       let dotCount = 1;
       dotInterval = setInterval(() => {
@@ -216,6 +360,45 @@
       }, 500);
     });
   }
+
+  const gencounterButton = document.getElementById("gen-counter");
+  if (gencounterButton) {
+    gencounterButton.addEventListener("click", () => {
+      const topk = document.getElementById('topk');
+      let k = topk.value;
+      loadingDiv.style.display = "flex";
+      loadingMsg.innerHTML = `Generation of ${k} best counterfactual examples in progress<span id="dot-animation">.</span>`;
+      const dotElementc = document.getElementById("dot-animation");
+      let dotCount = 1;
+      dotInterval = setInterval(() => {
+        dotCount = (dotCount % 3) + 1;
+        dotElementc.textContent = ".".repeat(dotCount);
+      }, 500);
+    });
+  }
+
+  const exampleSelect = document.getElementById('example-select');
+  const trueLabelDisplay = document.getElementById('true-label-display');
+  const targetLabelSelect = document.getElementById('target-label-select');
+
+  exampleSelect.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const trueLabel = selectedOption.getAttribute('data-truelabel');
+
+    trueLabelDisplay.textContent = trueLabel;
+
+    for (let opt of targetLabelSelect.options) {
+      opt.disabled = false;
+    }
+
+    for (let opt of targetLabelSelect.options) {
+      if (opt.value === trueLabel) {
+        opt.disabled = true;
+      }
+    }
+
+    targetLabelSelect.value = '';
+  });
     </script>
 </div>
 

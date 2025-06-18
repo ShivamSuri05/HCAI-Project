@@ -17,7 +17,10 @@ from graphviz import Digraph
 import time
 from sklearn.linear_model import LogisticRegression
 import numpy as np
-
+import json
+import pickle
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def index(request):
     context = request.session.get('decision_context', {})
@@ -29,6 +32,8 @@ def index(request):
             context.update(logistic_regression())
         elif 'model_type' in request.POST and request.POST['model_type'] == 'lr_sparse':
             context.update(sparse_logistic_regression(request))
+        elif 'model_type' in request.POST and request.POST['model_type'] == 'counterfactual':
+            context.update(counterfactual_examples(request))
         else:
             context.update(decision_tree())
 
@@ -49,17 +54,19 @@ def load_and_clean_dataset():
 def decision_tree():
     X, y = load_and_clean_dataset()
 
-    # Train/test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-    # Model
     clf = DecisionTreeClassifier(random_state=42)
     clf.fit(X_train, y_train)
+
+    model_path = os.path.join(BASE_DIR, 'project3/models/decision_tree.pkl')
+    with open(model_path, 'wb') as f:
+        pickle.dump(clf, f)
+    
     y_pred = clf.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
     num_leaves = clf.get_n_leaves()
 
-    # Plot the tree
     fig, ax = plt.subplots(figsize=(16, 9))
     plot_tree(clf, feature_names=X.columns, class_names=clf.classes_, filled=True, ax=ax)
     buf = io.BytesIO()
@@ -69,11 +76,23 @@ def decision_tree():
     image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
     image_uri = 'data:image/png;base64,' + image_base64
 
+    sampled_indices = np.random.choice(X_test.index, size=30, replace=False)
+    sampled_rows = X_test.loc[sampled_indices].to_dict(orient='records')
+    sampled_labels = y_test.loc[sampled_indices].tolist()
+
+    examples = []
+    for idx, features, label in zip(sampled_indices, sampled_rows, sampled_labels):
+        features_clean = {k: (v.item() if hasattr(v, 'item') else v) for k, v in features.items()}
+        label_clean = label.item() if hasattr(label, 'item') else label
+        examples.append({'index': int(idx), 'features': features_clean, 'true_label': label_clean})
+
     context = {
         'accuracy': f"{accuracy:.4f}",
         'num_leaves': int(num_leaves),
         'tree_image': image_uri,
-        'gosdt_error': None
+        'gosdt_error': None,
+        'examples': examples,
+        'class_labels': np.unique(y).tolist()
     }
 
     return context
@@ -82,28 +101,21 @@ def decision_tree():
 def build_tree(dot, node_dict, node_id=0, parent_id=None, edge_label=""):
     current_id = str(node_id)
 
-    # Leaf node
     if node_dict.get("name") == "class":
-        #label = f"Predict: {node_dict['prediction']}"
         label = f"Predict: {node_dict['prediction']}\nLoss: {node_dict['loss']:.4f}\nComplexity: {node_dict['complexity']:.4f}"
         dot.node(str(node_id), label=label, shape="box", style="filled")
-        #dot.node(current_id, label, shape="box")
     else:
-        # Internal node
         label = f"{node_dict['name']} {node_dict['relation']} {node_dict['reference']}"
         dot.node(current_id, label, style="filled")
 
-        # True branch
         if "true" in node_dict:
             node_id += 1
             node_id = build_tree(dot, node_dict["true"], node_id, current_id, "True")
 
-        # False branch
         if "false" in node_dict:
             node_id += 1
             node_id = build_tree(dot, node_dict["false"], node_id, current_id, "False")
 
-    # Add edge from parent to current node
     if parent_id is not None:
         dot.edge(parent_id, current_id, label=edge_label)
 
@@ -178,16 +190,13 @@ def sparse_tree(request):
 def logistic_regression():
     X, y = load_and_clean_dataset()
 
-    # Train/test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-    # Model (no sparsity / penalty)
     model = LogisticRegression(penalty=None, solver='lbfgs', max_iter=1000)
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
 
-    # Number of non-zero features (used features)
     if model.coef_.ndim == 1:
         used_features = np.count_nonzero(model.coef_)
     else:
@@ -206,24 +215,22 @@ def sparse_logistic_regression(request):
     X, y = load_and_clean_dataset()
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-    # Convert λ to C (inverse regularization strength)
     try:
         lambda_float = float(lambda_value)
         C_value = 1.0 / lambda_float if lambda_float != 0 else 1e6  # Avoid division by zero
     except ValueError:
         C_value = 1.0
 
-    # Use L1 penalty for sparsity, saga supports L1 for multiclass
+    
     model = LogisticRegression(penalty='l1', solver='saga', C=C_value, max_iter=10000)
     model.fit(X_train, y_train)
 
-    # Predict and evaluate
+
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
 
     print(model.n_iter_[0])
 
-    # Count how many features are used (non-zero in any class)
     used_features = np.count_nonzero(np.any(model.coef_ != 0, axis=0))
 
     context = {
@@ -234,3 +241,82 @@ def sparse_logistic_regression(request):
     }
 
     return context
+
+def counterfactual_examples(request):
+    X, y = load_and_clean_dataset()
+    model_path = os.path.join(BASE_DIR, 'project3/models/decision_tree.pkl')
+    with open(model_path, 'rb') as f:
+        clf = pickle.load(f)
+
+    x_index = int(request.POST.get('example_index'))
+    target_label = request.POST.get('target_label')
+    top_k = int(request.POST.get('topk', 5))
+    top_k = min(top_k, 10)
+
+    x = X.loc[x_index].values.reshape(1, -1)
+
+    categorical_cols = ['island', 'sex', 'year']
+    numerical_cols = [col for col in X.columns if col not in categorical_cols]
+    cat_idx = [X.columns.get_loc(c) for c in categorical_cols]
+    num_idx = [X.columns.get_loc(c) for c in numerical_cols]
+
+    N = 5000
+    rng = np.random.default_rng(42)
+    std_devs = X[numerical_cols].std().values + 1e-6
+    noise = rng.normal(0, std_devs * 0.3, size=(N, len(numerical_cols)))
+    
+    x_numerical = x[0, num_idx]
+    x_samples = np.repeat(x, N, axis=0)
+    x_samples[:, num_idx] += noise
+
+    for idx, col in zip(cat_idx, categorical_cols):
+        unique_vals = X[col].unique()
+        x_samples[:, idx] = rng.choice(unique_vals, size=N)
+
+    preds = clf.predict(x_samples)
+    matching = x_samples[preds == target_label]
+
+    ex_list = X.loc[x_index].values.tolist()
+    example = f"#{x_index} - Features: island={int(ex_list[0])}, bill_length_mm={ex_list[1]}, \
+    bill_depth_mm={ex_list[2]}, flipper_length_mm={ex_list[3]}, body_mass_g={ex_list[4]}, \
+    sex={int(ex_list[5])}, year={int(ex_list[6])}"
+
+    if len(matching) == 0:
+        return {
+            'counterfactuals': [],
+            'feature_names': list(X.columns),
+            'message': f"No counterfactuals found for this example: {example}"
+        }
+
+    mad = np.median(np.abs(X[numerical_cols] - X[numerical_cols].median()), axis=0) + 1e-6
+    distances = hybrid_distance(x[0], matching, mad, num_idx, cat_idx)
+    top_k_indices = np.argsort(distances)[:top_k]
+    top_k_samples = matching[top_k_indices]
+
+    top_k_samples_df = pd.DataFrame(top_k_samples, columns=X.columns)
+
+    list_of_lists = top_k_samples_df.values.tolist()
+    for row in list_of_lists:
+        for idx, col in enumerate(top_k_samples_df.columns):
+            if col in categorical_cols:
+                row[idx] = int(row[idx])
+            else:
+                row[idx] = round(row[idx],1)
+    
+
+    return {
+        'counterfactuals': list_of_lists,
+        'feature_names': list(X.columns),
+        'true_label': y.loc[x_index],
+        'selected_example': example,
+        'target_label': target_label
+    }
+
+def hybrid_distance(x, X_cf, mad, num_idx, cat_idx):
+    num_diff = np.abs(X_cf[:, num_idx] - x[num_idx]) / mad
+    num_dist = np.sum(num_diff, axis=1)
+
+    cat_diff = (X_cf[:, cat_idx] != x[cat_idx]).astype(int)
+    cat_dist = np.sum(cat_diff, axis=1)
+
+    return num_dist + cat_dist

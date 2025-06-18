@@ -92,6 +92,7 @@
 
 
     <script>
+      sessionStorage.removeItem('modelTrained');
       document.getElementById("generate-plots-btn").addEventListener("click", function () {
         const form = document.getElementById("full-form");
         const formData = new FormData();
