@@ -24,6 +24,7 @@
 
 #sp-tree{
     margin: 3vw auto;
+    width: 50vw;
 }
 
 .vw20{
@@ -40,4 +41,88 @@
     text-align: center;
     margin-top: 0.25vw;
     font-size: 1rem;
+}
+
+.left{
+    align-items: unset;
+    margin: 0 15vw;
+}
+
+.disabled-element {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.block:has(.disabled-element) {
+  position: relative;
+}
+
+.block:has(.disabled-element)::after {
+  content: "Please train the model first";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #666;
+  z-index: 10;
+  display: none;
+}
+
+.block.disabled-wrapper::after {
+  display: block;
+}
+
+.train-first-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+
+.train-first-message {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  max-width: 80%;
+  border: 2px solid #4285f4;
+}
+
+.train-first-message h2 {
+  color: #4285f4;
+  margin-top: 0;
+}
+
+.train-first-message button {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+.train-first-message button:hover {
+  background: #3367d6;
+}
+
+.block {
+  position: relative;
+}
+
+.vw72 {
+    width: 72vw;
+    margin-bottom: -1vw;
 }
