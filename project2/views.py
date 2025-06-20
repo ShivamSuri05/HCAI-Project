@@ -185,8 +185,6 @@ def run_active_learning(strategy, initial_size = 100, max_iters=10, batch_size=1
 
 
 def plot_accuracy_curve(scores):
-    print(scores)
-    print(type(scores[0]))
     plt.figure(figsize=(8, 4))
     plt.plot(range(1, len(scores) + 1), scores, marker='o')
     plt.title("Accuracy vs. Active Learning Iteration")
