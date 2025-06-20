@@ -155,7 +155,7 @@ def run_active_learning(strategy, initial_size = 100, max_iters=10, batch_size=1
         else:
             no_improve_count = 0
 
-        accuracy_scores.append(f"{acc:.4f}")
+        accuracy_scores.append(float(f"{acc:.4f}"))
 
         if len(unlabeled_df) == 0:
             break
