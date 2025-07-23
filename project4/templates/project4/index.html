@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load custom_filters %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'project3/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="box">
+    <div id="loading" style="
+    background-color: #a8aaaad9;
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+">
+    <span id="loading-msg">Decision Tree creation in progress<span id="dot-animation">.</span></span>
+</div>
+    <div class="title-container">
+        <div class="title-text">
+            <h1>Human Centric</h1>
+            <h2>Artificial Intelligence</h2>
+        </div>
+        <!-- Reuse your images -->
+        <div id="image1">
+            <img src="{% static 'images/image-1.png' %}" alt="img1" style="width: 15vw;">
+        </div>
+        <div id="nn-gif">
+            <img src="{% static 'images/NN2.gif' %}" alt="Neural Network GIF" style="width: 150px;">
+        </div>
+    </div>
+    <div class="main-text">
+        <h2>Project 4</h2>
+        <div class="section-heading">Recommender Systems</div>
+        <div class="centered-btns" style="margin-top: 3vw;">
+            <button class="download-btn" type="button" onclick="location.href=`{% url 'project4:download_pdf' %}`">Download PDF Report</button>
+        </div>
+        <div class="centered-btns" style="margin-top: 3vw;">
+            <button class="download-btn" type="button" onclick="location.href=`{% url 'project4:recommender' %}`">Go To Recommender System <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+{% endblock script %}
