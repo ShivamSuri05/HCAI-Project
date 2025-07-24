@@ -5,7 +5,7 @@
 {% load custom_filters %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'project3/style.css' %}">
+<link rel="stylesheet" href="{% static 'project4/style.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -22,26 +22,90 @@
     font-size: 24px;
     font-weight: bold;
     color: #333;
-">
+    ">
     <span id="loading-msg">Decision Tree creation in progress<span id="dot-animation">.</span></span>
 </div>
-    <div class="title-container">
-        <div class="title-text">
-            <h1>Human Centric</h1>
-            <h2>Artificial Intelligence</h2>
-        </div>
-        <!-- Reuse your images -->
-        <div id="image1">
-            <img src="{% static 'images/image-1.png' %}" alt="img1" style="width: 15vw;">
-        </div>
-        <div id="nn-gif">
-            <img src="{% static 'images/NN2.gif' %}" alt="Neural Network GIF" style="width: 150px;">
-        </div>
+<div class="title-container">
+    <div class="title-text">
+        <h1>Human Centric</h1>
+        <h2>Artificial Intelligence</h2>
     </div>
-    <div class="main-text">
-        <h2>Project 4</h2>
-        <div class="section-heading">Recommender Systems</div>
+    <!-- Reuse your images -->
+    <div id="image1">
+        <img src="{% static 'images/image-1.png' %}" alt="img1" style="width: 15vw;">
     </div>
+    <div id="nn-gif">
+        <img src="{% static 'images/NN2.gif' %}" alt="Neural Network GIF" style="width: 150px;">
+    </div>
+</div>
+<div class="main-text">
+    <h2>Project 4</h2>
+    <div class="section-heading">Discover Movies You'll Love - Help Us Learn Your Taste</div>
+    <p>
+        This is an interactive movie recommender designed to learn your preferences from scratch. You’ll rate a few movies, and the system will guide you by showing how your answers influence your recommendations. The more you rate, the smarter the suggestions become
+    </p>
+    {% if not start_system %}
+    <div class="centered-btns" style="margin-top: 3vw;">
+        <button class="download-btn" type="button" onclick="location.href=`{% url 'project4:recommender' %}?start=true`">Click Here to begin</button>
+    </div>
+    {% endif %}
+    {% if start_system %}
+    <div class="section-heading">Discover your personalized recommendations</div>
+    <div class="grid-container">
+  <div class="movie-container" style="background-image: url('{{ movie.backdrop_url }}');">
+      <img class="movie-poster" src="{{ movie.poster_url }}" alt="{{ movie.name }} poster" />
+      <div class="movie-summary">
+          <h2>{{ movie.name }}</h2>
+          <p class="genre">({{ movie.genre }})</p>
+          <p>{{ movie.summary }}</p>
+      </div>
+  </div>
+
+  <div class="chart1">
+      This section will display your average ratings per genre in real-time, updating automatically each time you submit a rating. Please submit your rating to see your average ratings per genre.
+  </div>
+
+  <div class="rating-container">
+    <form method="post" class="rating-form">
+      {% csrf_token %}
+      <div class="rating-label">
+          <label for="rating">Rate this movie:</label>
+      </div>
+      
+      <div class="star-rating">
+          {% for i in rating_choices %}
+          {% with i|floatformat:1 as f %}
+          {% if ".5" in f %}
+          <input type="radio" id="half{{ i }}" name="rating" value="{{ i }}" />
+          <label class="half" for="half{{ i }}" title="{{ i }} stars"></label>
+          {% else %}
+          <input type="radio" id="full{{ i }}" name="rating" value="{{ i }}" />
+          <label class="full" for="full{{ i }}" title="{{ i }} stars"></label>
+          {% endif %}
+          {% endwith %}
+          {% endfor %}
+      </div>
+      {% if preview_msg %}
+          <div class="what-if-5">{{ preview_msg|safe }}</div>
+      {% endif %}
+      <input type="hidden" name="movie_id" value="{{ movie.id }}">
+      <div id="submit-btns">
+        <button type="submit" class="submit-btn" style="display: inline-block;">Submit Rating</button> <button type="submit" class="submit-btn" style="display: inline-block;">Skip</button>
+      </div>
+      </form>
+
+    <p class="note">**Note: You must rate at least 10 movies for the recommendation system to generate personalized suggestions. You may skip a movie if you're unfamiliar with it, but keep in mind that you can only skip up to 10 movies in total.</p>
+  </div>
+
+  <div class="chart2">
+      This section will display your genre preferences in real-time, updating automatically each time you submit a rating. Please submit your rating to see your genre preferences.
+  </div>
+</div>
+
+</div>
+
+{% endif %}
+</div>
 </div>
 
 {% endblock %}

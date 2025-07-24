@@ -1,0 +1,251 @@
+.movie-container {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    color: white;
+    height: 20vw;
+    width: 40vw;
+    padding: 20px;
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    box-shadow: inset 0 0 0 1000px rgba(0,0,0,0.5);
+    max-width: 90vw;
+    min-height: 15vw;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.movie-poster {
+    position: relative;
+    width: 150px;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(255,255,255,0.8);
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+    order: -1; /* moves image before summary */
+    align-self: flex-end; /* align the image to bottom */
+    margin: 0.5vw;
+}
+
+.movie-poster:hover {
+    transform: scale(1.05);
+}
+
+.movie-summary {
+    max-width: calc(40vw - 180px);
+    overflow-wrap: break-word;
+}
+
+.movie-summary h2 {
+    margin: 0 0 10px 0;
+}
+
+.movie-summary p {
+    margin: 0;
+    line-height: 1.4;
+}
+
+.rating-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* space between label, stars and button */
+  flex-wrap: wrap; /* if screen is narrow, allow wrapping */
+}
+
+.rating-label {
+  font-weight: bold;
+  font-size: 1.75vw;
+  white-space: nowrap; /* prevent label text wrap */
+}
+
+/* Star rating container */
+.star-rating {
+  display: inline-flex;
+  direction: rtl;
+  font-size: 1.75vw;
+  position: relative;
+  user-select: none; /* prevent accidental text selection on stars */
+}
+
+/* Hide radio inputs cleanly */
+.star-rating input {
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0);
+  border: 0 !important;
+}
+
+/* Label styling */
+.star-rating label {
+  cursor: pointer;
+  color: lightgray;
+  position: relative;
+  width: 3vw;
+  height: 4vw;
+  display: inline-block;
+  vertical-align: middle;
+  padding: 0;
+  margin: 0 0.6vw;
+}
+
+/* Full star */
+.star-rating label.full::before {
+  content: "★";
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: lightgray;
+  font-size: 1.5em;
+  z-index: 1;
+}
+
+.star-rating label.half{
+  left: 4.2vw;
+}
+
+/* Half star */
+.star-rating label.half::before {
+  content: "★";
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: lightgray;
+  font-size: 1.5em;
+  width: 40%;
+  overflow: hidden;
+  z-index: 2;
+  direction: ltr;
+}
+
+/* Checked and hover color */
+.star-rating input:checked ~ label::before,
+.star-rating label:hover ~ label::before,
+.star-rating label:hover::before {
+  color: gold;
+}
+
+/* Submit button style */
+.submit-btn {
+  padding: 0.5em 1em;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#submit-btns {
+  text-align: center;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 columns */
+  grid-template-rows: auto auto; /* 2 rows, height auto */
+  gap: 20px; /* spacing between items */
+  width: 100%;
+  margin-top: 2rem;
+}
+
+/* Optional: make each grid item have some styling */
+.grid-container > div {
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgb(0 0 0 / 0.1);
+  min-height: 150px;
+  display: flex;
+}
+
+.rating-form {
+  width: 100%;
+}
+
+/* Override background colors for chart divs (if you want) */
+.chart1 {
+  display: block !important;
+  align-content: center;
+  text-align: center;
+}
+
+.chart2 {
+  color: black; /* better contrast on bisque */
+  display: block !important;
+  align-content: center;
+  text-align: center;
+}
+
+.note {
+  font-size: small;
+  font-style: italic;
+}
+
+/* For movie container, remove extra box-shadow or adjust if needed */
+.movie-container {
+  background-size: cover !important;
+  background-position: center !important;
+  color: white !important;
+  padding: 10px !important;
+  height: 25vw !important;
+  width: auto !important;
+  max-width: none !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+}
+
+/* If the movie-poster and summary inside .movie-container need to be row again */
+.movie-container {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  flex-direction: row;
+}
+
+/* Adjust rating container style if needed */
+.rating-container {
+  border-radius: 10px;
+  padding: 10px;
+  min-height: 25vw !important;
+}
+
+.what-if-5 {
+  padding: 12px 20px;
+  margin-top: 15px;
+  border-radius: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1rem;
+  line-height: 1.4;
+  max-width: 90vw;
+}
+
+.what-if-5 li {
+  margin-left: 20px;
+  margin-bottom: 6px;
+  list-style-type: disc;
+}
+
+.genre {
+  font-size: medium;
+  font-style: italic;
+}
+
+
+
+@media (max-width: 600px) {
+    .movie-container {
+        flex-direction: column;
+        height: auto;
+        width: 90vw;
+        padding: 10px;
+    }
+    .movie-poster {
+        width: 100px;
+        margin-bottom: 10px;
+    }
+    .movie-summary {
+        max-width: 100%;
+    }
+}
