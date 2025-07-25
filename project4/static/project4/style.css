@@ -40,11 +40,31 @@
 
 .movie-summary h2 {
     margin: 0 0 10px 0;
+    text-shadow:
+    -1px -1px 0 black,
+    1px -1px 0 black,
+    -1px 1px 0 black,
+    1px 1px 0 black;
 }
 
 .movie-summary p {
     margin: 0;
     line-height: 1.4;
+    font-size: medium;
+    max-height: 10vw;
+    overflow: auto;
+    text-shadow:
+    -1px -1px 0 black,
+    1px -1px 0 black,
+    -1px 1px 0 black,
+    1px 1px 0 black;
+}
+.movie-summary p::-webkit-scrollbar {
+  display: none;
+}
+
+.chart1 img {
+  height: 25vw;
 }
 
 .rating-container {
@@ -176,6 +196,9 @@
   align-content: center;
   text-align: center;
 }
+.chart2 img {
+  height: 25vw;
+}
 
 .note {
   font-size: small;
@@ -188,7 +211,7 @@
   background-position: center !important;
   color: white !important;
   padding: 10px !important;
-  height: 25vw !important;
+  height: 26vw !important;
   width: auto !important;
   max-width: none !important;
   box-shadow: none !important;
@@ -230,8 +253,16 @@
 .genre {
   font-size: medium;
   font-style: italic;
+  text-shadow:
+    -1px -1px 0 black,
+    1px -1px 0 black,
+    -1px 1px 0 black,
+    1px 1px 0 black;
 }
 
+.disabled {
+  opacity: 50% !important;
+}
 
 
 @media (max-width: 600px) {

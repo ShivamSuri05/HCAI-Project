@@ -61,12 +61,19 @@
       </div>
   </div>
 
+  {% if not bar_graph %}
   <div class="chart1">
       This section will display your average ratings per genre in real-time, updating automatically each time you submit a rating. Please submit your rating to see your average ratings per genre.
   </div>
+  {% endif %}
+  {% if bar_graph %}
+  <div class="chart1">
+    <img src="data:image/png;base64,{{ bar_graph }}" alt="Avg Rating Graph">
+  </div>
+  {% endif %}
 
   <div class="rating-container">
-    <form method="post" class="rating-form">
+    <form method="post" class="rating-form" onsubmit="return validateRating()">
       {% csrf_token %}
       <div class="rating-label">
           <label for="rating">Rate this movie:</label>
@@ -90,16 +97,41 @@
       {% endif %}
       <input type="hidden" name="movie_id" value="{{ movie.id }}">
       <div id="submit-btns">
-        <button type="submit" class="submit-btn" style="display: inline-block;">Submit Rating</button> <button type="submit" class="submit-btn" style="display: inline-block;">Skip</button>
+        <button type="submit" name="submit_rating" class="submit-btn" style="display: inline-block;">Submit Rating</button>
+  
+  {% if can_skip %}
+    <button type="submit" name="skip" class="submit-btn" style="display: inline-block;">Skip ({{ remaining_skips }} left)</button>
+  {% else %}
+    <button type="button" class="submit-btn disabled" disabled style="display: inline-block;" title="Skip limit reached">Skip (Limit reached)</button>
+  {% endif %}
+
       </div>
       </form>
+      <script>
+  function validateRating() {
+    const selected = document.querySelector('input[name="rating"]:checked');
+    if (!selected) {
+      alert('Please select a rating before submitting!');
+      return false; // prevents form submission
+    }
+    return true; // allows form submission
+  }
+</script>
 
     <p class="note">**Note: You must rate at least 10 movies for the recommendation system to generate personalized suggestions. You may skip a movie if you're unfamiliar with it, but keep in mind that you can only skip up to 10 movies in total.</p>
   </div>
 
+  {% if not spider_radar %}
   <div class="chart2">
       This section will display your genre preferences in real-time, updating automatically each time you submit a rating. Please submit your rating to see your genre preferences.
   </div>
+  {% endif %}
+  {% if spider_radar %}
+  <div class="chart2">
+    <img src="data:image/png;base64,{{ spider_radar }}" alt="Taste Influence Spider Graph">
+  </div>
+{% endif %}
+
 </div>
 
 </div>
