@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
+from dotenv import load_dotenv
 import requests
 import re
 import random
@@ -13,6 +14,9 @@ import os
 import io
 import base64
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv()
+
+TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
 MAX_SKIPS = 3
 
@@ -302,7 +306,7 @@ def get_rec_movies_name(movies, recommendations):
     return movie_names
 
 def get_movie_details_tmdb(movie_title):
-    API_KEY = '84879879f0c42769817570d4a36a1d26'
+    API_KEY = TMDB_API_KEY
     url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={movie_title}"
 
     default_poster = '/static/images/default_poster.jpg'
@@ -419,8 +423,11 @@ def recommender(request):
         rating = 5.0
         #user_ratings.append((movie_id, rating))
         print(f"✅ Rating {rating} recorded.")
-    
-        U_i = compute_user_embedding([(movie_id,5.0)], movie_embeddings, global_mean)
+
+        temp_rating_list = user_ratings.copy()
+        temp_rating_list.append((movie_id,5.0))
+        print(temp_rating_list)
+        U_i = compute_user_embedding(temp_rating_list, movie_embeddings, global_mean)
         recommendations = recommend_movies(U_i, global_mean, movie_embeddings, seen_movie_ids=rated_movie_ids, top_k=3)
         rated_movie_ids.remove(movie_id)
         print("\n🎯 Top Recommendations (if you rate this movie as 5):")
@@ -436,6 +443,21 @@ def recommender(request):
         msg = f"If you rate this movie as 5, you may also like:<ul> <li>"+movie_names[0]+"</li><li>"+movie_names[1]+"</li><li>"+movie_names[2]+"</li></ul>"
         _, overview, poster_url, backdrop_url = get_movie_details_tmdb(re.sub(r"\s*\([^)]*\)", "", title))
 
+        rec_movies_list = []
+        if len(rated_movie_ids) >=10:
+            U_i = compute_user_embedding(user_ratings, movie_embeddings, global_mean)
+            recommendations = recommend_movies(U_i, global_mean, movie_embeddings, seen_movie_ids=rated_movie_ids, top_k=10)
+            for rec_mid, score in recommendations:
+                rec_title, genre = get_movie_info(movies, rec_mid)
+                _, _, rec_poster_url, _ = get_movie_details_tmdb(re.sub(r"\s*\([^)]*\)", "", rec_title))
+                mv = {
+                    'id': rec_mid,
+                    'poster_url': rec_poster_url,
+                    'name': rec_title,
+                    'genre': genre
+                }
+                rec_movies_list.append(mv)
+            
         movie = {
             'id': movie_id,
             'backdrop_url': backdrop_url,
@@ -452,7 +474,9 @@ def recommender(request):
             'bar_graph': graph_base64,
             'spider_radar': spider_graph,
             'can_skip': can_skip,
-            'remaining_skips': MAX_SKIPS - skip_count
+            'remaining_skips': MAX_SKIPS - skip_count,
+            'show_rec': len(rated_movie_ids) >= 10,
+            'rec_movies_list': rec_movies_list
         }
         return render(request, 'project4/recommender.html', context)                     
 

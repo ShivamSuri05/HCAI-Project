@@ -73,7 +73,7 @@
   {% endif %}
 
   <div class="rating-container">
-    <form method="post" class="rating-form" onsubmit="return validateRating()">
+    <form method="post" class="rating-form" onsubmit="return validateRating(event)">
       {% csrf_token %}
       <div class="rating-label">
           <label for="rating">Rate this movie:</label>
@@ -100,7 +100,7 @@
         <button type="submit" name="submit_rating" class="submit-btn" style="display: inline-block;">Submit Rating</button>
   
   {% if can_skip %}
-    <button type="submit" name="skip" class="submit-btn" style="display: inline-block;">Skip ({{ remaining_skips }} left)</button>
+    <button type="submit" name="skip" class="submit-btn" id="skipped-btn" style="display: inline-block;">Skip ({{ remaining_skips }} left)</button>
   {% else %}
     <button type="button" class="submit-btn disabled" disabled style="display: inline-block;" title="Skip limit reached">Skip (Limit reached)</button>
   {% endif %}
@@ -109,6 +109,12 @@
       </form>
       <script>
   function validateRating() {
+    const skipBtn = document.querySelector('#skipped-btn');
+    if (event.submitter === skipBtn) {
+      // Skip clicked: allow without validation
+      console.log("Skip clicked");
+      return true;
+    }
     const selected = document.querySelector('input[name="rating"]:checked');
     if (!selected) {
       alert('Please select a rating before submitting!');
@@ -133,7 +139,20 @@
 {% endif %}
 
 </div>
-
+{% if show_rec %}
+<div class="section-heading">Movies Recommendations based on your Taste</div>
+<div class="rec-movie-grid">
+    {% for movie in rec_movies_list %}
+      <div class="rec-movie-card">
+        <img class="rec-movie-poster" src="{{ movie.poster_url }}" alt="{{ movie.name }} poster">
+        <div class="rec-movie-info">
+          <h3>{{ movie.name }}</h3>
+          <p class="rec-genre">{{ movie.genre }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 </div>
 
 {% endif %}
