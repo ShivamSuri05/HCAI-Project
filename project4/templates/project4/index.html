@@ -10,21 +10,6 @@
 
 {% block content %}
 <div class="box">
-    <div id="loading" style="
-    background-color: #a8aaaad9;
-    position: fixed;
-    width: 100vw;
-    height: 100vh;
-    z-index: 10;
-    display: none;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    font-weight: bold;
-    color: #333;
-">
-    <span id="loading-msg">Decision Tree creation in progress<span id="dot-animation">.</span></span>
-</div>
     <div class="title-container">
         <div class="title-text">
             <h1>Human Centric</h1>
@@ -40,7 +25,8 @@
     </div>
     <div class="main-text">
         <h2>Project 4</h2>
-        <div class="section-heading">Recommender Systems</div>
+        <div class="section-heading">Influence of future predictions over active
+learning of users' tastes for recommender systems</div>
         <div class="centered-btns" style="margin-top: 3vw;">
             <button class="download-btn" type="button" onclick="location.href=`{% url 'project4:download_pdf' %}`">Download PDF Report</button>
         </div>
