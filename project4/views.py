@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse, Http404
+from django.http import HttpResponse, JsonResponse, Http404, FileResponse
 from project4 import model_cache
 import pandas as pd
 import numpy as np
@@ -18,13 +18,17 @@ load_dotenv()
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
-MAX_SKIPS = 3
+MAX_SKIPS = 5
 
 def index(request):
     return render(request, 'project4/index.html', {})
 
 def download_pdf(request):
-    raise Http404("Model file not found.")
+    path = os.path.join(BASE_DIR, 'project4/data/Influence_Based_Cold_Start_Recommendation.pdf')
+    if os.path.exists(path):
+        return FileResponse(open(path, 'rb'), as_attachment=True, filename='Influence_Based_Cold_Start_Recommendation.pdf')
+    else:
+        raise Http404("Model file not found.")
 
 def get_combined_dataset():
     ratings = pd.read_csv("ml-latest-small/ratings.csv")
@@ -68,7 +72,6 @@ def create_R_matrix(df):
         m_idx = movie_id_to_index[row['movieId']]
         R[u_idx, m_idx] = row['rating']
 
-    print(R.shape)
     return R
 
 def matrix_factorization(R, global_mean, K=20, steps=50, alpha=0.005, lambda_reg=0.1):
@@ -137,27 +140,14 @@ def transform_score(raw_score, min_rating=0.5, max_rating=5.0):
     return scaled_score
 
 def select_next_movie(user_id, rated_movies, movie_embeddings, movie_metadata, U_i, global_mean, switch_threshold=5):
-    """
-    Select the next movie to ask the user to rate.
-    For the first `switch_threshold` ratings, use diversity sampling.
-    After that, use uncertainty sampling.
-    """
     all_movie_ids = list(movie_metadata['movieId'].values)
     unrated_ids = list(set(all_movie_ids) - rated_movies)
-    print(list(rated_movies)[:5])
-    print(list(movie_embeddings.keys())[:5])
-
-    #print("Shape of rated ids",rated_movies)
-    #print(len(movie_embeddings))  # prints number of movie embeddings)
-    #print(movie_embeddings[])
-    #print("Shape of unrated ids",len(unrated_ids))
     
     if not unrated_ids:
         return None
 
     # Filter out movies not in V
     valid_ids = [mid for mid in unrated_ids if mid in movie_embeddings]
-    #print("Shape of valid ids",len(valid_ids))
     
     if not valid_ids:
         return None
@@ -169,8 +159,6 @@ def select_next_movie(user_id, rated_movies, movie_embeddings, movie_metadata, U
 
         rated_vecs = np.array([movie_embeddings[mid] for mid in rated_movies if mid in movie_embeddings])
         
-        #print(rated_vecs.shape)
-        #print(rated_vecs[0])
         avg_rated_vec = rated_vecs.mean(axis=0).reshape(1, -1)
 
         # Find the movie whose embedding is furthest from avg_rated_vec
@@ -191,7 +179,6 @@ def select_next_movie(user_id, rated_movies, movie_embeddings, movie_metadata, U
             pred_scores.append((mid, abs(pred - 3.0)))  # uncertainty = distance from neutral
 
         pred_scores.sort(key=lambda x: x[1])  # sort by uncertainty
-        print(pred_scores[0][1])
         return pred_scores[0][0]
 
 def get_movie_info(movies, movie_id):
@@ -362,24 +349,9 @@ def recommender(request):
     user_ratings = model_cache.user_ratings
 
 
-    """if init_flag:
-        V, global_mean = get_saved_model_data()
-        movie_list, index_to_movie_id = load_and_return_movie_mappings()
-        movies = movie_list
-        movie_embeddings = {index_to_movie_id[idx]: V[idx] for idx in range(len(V))}
-        available_movie_ids = list(movie_embeddings.keys())
-        rated_movie_ids = set()
-        init_flag = False
-        request.session['init_flag']= init_flag"""
-   
-    #plot_avg_ratings_bar(user_ratings, movies)
-    #plot_taste_influence_spider(user_ratings, movies)
-
-    print(request.POST)
     if request.method == 'POST':
         can_skip = False
         if 'skip' in request.POST:
-            print("Inside Skip Block")
             if request.session['skip_count'] < MAX_SKIPS:
                 request.session['skip_count'] += 1
                 # Proceed to next movie without rating
@@ -387,7 +359,6 @@ def recommender(request):
         
         skip_count = request.session['skip_count']
         can_skip = skip_count < MAX_SKIPS and 'skip' in request.POST
-        print("Skip Count::", skip_count)
         rating = float(request.POST.get('rating',-1.0))
         movie_id = int(request.POST.get('movie_id'))
         print(f"User rated movie {movie_id} as {rating}")
@@ -400,7 +371,6 @@ def recommender(request):
             else:
                 print("Rating Skipped for movie id: ",movie_id)
         
-        print("User Ratings: ",user_ratings)
         rated_movie_ids.add(movie_id)
         spider_graph = plot_taste_influence_spider(user_ratings, movies)
         graph_base64 = plot_avg_ratings_bar(user_ratings, movies)
@@ -418,26 +388,13 @@ def recommender(request):
 
         rated_movie_ids.add(movie_id)       
         title, genres = get_movie_info(movies, movie_id)
-        print(f"\n🎥 Movie: {title}")
-        print(f"📂 Genres: {genres}")
         rating = 5.0
-        #user_ratings.append((movie_id, rating))
-        print(f"✅ Rating {rating} recorded.")
 
         temp_rating_list = user_ratings.copy()
         temp_rating_list.append((movie_id,5.0))
-        print(temp_rating_list)
         U_i = compute_user_embedding(temp_rating_list, movie_embeddings, global_mean)
         recommendations = recommend_movies(U_i, global_mean, movie_embeddings, seen_movie_ids=rated_movie_ids, top_k=3)
         rated_movie_ids.remove(movie_id)
-        print("\n🎯 Top Recommendations (if you rate this movie as 5):")
-        for rec_mid, score in recommendations:
-            rec_title, genre = get_movie_info(movies, rec_mid)
-            print("score")
-            print(score)
-            score = transform_score(score, 0.5, 5.0)
-            print(score)
-            print(f"  - {rec_title} {genre} (Predicted Score: {score:.2f})")
 
         movie_names = get_rec_movies_name(movies, recommendations)
         msg = f"If you rate this movie as 5, you may also like:<ul> <li>"+movie_names[0]+"</li><li>"+movie_names[1]+"</li><li>"+movie_names[2]+"</li></ul>"
@@ -490,23 +447,11 @@ def recommender(request):
         movie_id = random.choice(candidate_ids)
         rated_movie_ids.add(movie_id)
         title, genres = get_movie_info(movies, movie_id)
-        print(f"\n🎥 Movie: {title}")
-        print(f"📂 Genres: {genres}")
         rating = 5.0
-        #user_ratings.append((movie_id, rating))
-        print(f"✅ Rating {rating} recorded.")
     
         U_i = compute_user_embedding([(movie_id,5.0)], movie_embeddings, global_mean)
         recommendations = recommend_movies(U_i, global_mean, movie_embeddings, seen_movie_ids=rated_movie_ids, top_k=3)
         rated_movie_ids.remove(movie_id)
-        print("\n🎯 Top Recommendations (if you rate this movie as 5):")
-        for rec_mid, score in recommendations:
-            rec_title, genre = get_movie_info(movies, rec_mid)
-            print("score")
-            print(score)
-            score = transform_score(score, 0.5, 5.0)
-            print(score)
-            print(f"  - {rec_title} {genre} (Predicted Score: {score:.2f})")
 
         movie_names = get_rec_movies_name(movies, recommendations)
         msg = f"If you rate this movie as 5, you may also like:<ul> <li>"+movie_names[0]+"</li><li>"+movie_names[1]+"</li><li>"+movie_names[2]+"</li></ul>"
@@ -527,7 +472,7 @@ def recommender(request):
             'preview_msg': msg,
             'bar_graph': None,
             'can_skip': True,
-            'remaining_skips': 3
+            'remaining_skips': 5
         }
         return render(request, 'project4/recommender.html', context)
     
