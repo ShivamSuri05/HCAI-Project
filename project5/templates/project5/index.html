@@ -1,0 +1,496 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'project3/style.css' %}">
+<style>
+    /* Simple grid styles */
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(5, 50px);
+        gap: 2px;
+    }
+    .cell {
+        width: 50px;
+        height: 50px;
+        text-align: center;
+        line-height: 50px;
+        font-weight: bold;
+        border: 1px solid #ccc;
+        font-size: 20px;
+    }
+    .M { background-image: url('/static/images/mouse.jpg'); background-size: cover;}
+    .C { background-image: url('/static/images/cheese.jpg'); background-size: cover;}
+    .O { background-image: url('/static/images/organic_cheese.jpg'); background-size: cover;}
+    .T { background-image: url('/static/images/trap.jpg'); background-size: cover;}
+    .wall { background-image: url('/static/images/wall.jpeg'); background-size: cover;}
+
+    /* Buttons styling */
+    #buttons-container {
+        display: flex;
+        gap: 20vw;
+        justify-content: center;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    #grid-container-1 {
+        border: black;
+        background: radial-gradient(black, transparent);
+        min-height: 15vw;
+    }
+    #grid-container-2 {
+        border: black;
+        background: radial-gradient(black, transparent);
+        min-height: 15vw;
+    }
+    #grid-container-3 {
+        border: black;
+        margin: 2vw;
+        min-height: 15vw;
+        justify-content: center;
+    }
+    .loading-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 250px; /* same height as grid */
+  width: 550%;
+  font-size: 24px;
+  color: white;
+}
+.btn {
+    margin: 2vw;
+    width: 100%;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="box">
+    <div class="title-container">
+        <div class="title-text">
+            <h1>Human Centric</h1>
+            <h2>Artificial Intelligence</h2>
+        </div>
+        <div id="image1">
+            <img src="{% static 'images/image-1.png' %}" alt="img1" style="width: 15vw;">
+        </div>
+        <div id="nn-gif">
+            <img src="{% static 'images/NN2.gif' %}" alt="Neural Network GIF" style="width: 150px;">
+        </div>
+    </div>
+    <div class="main-text">
+        <h2>Project 5</h2>
+        <div class="section-heading">Reinforcement Learning with Human Feedback</div>
+    
+
+    <div id="buttons-container">
+  <div class="trajectory-column" style="display: flex; flex-direction: column; align-items: center;">
+    <h3 class="section-heading">Trajectory 1</h3>
+    <div id="grid-container-1" class="grid"><div class="loading-message">Loading...</div></div>
+    <button id="btn-trajectory-1" class="btn">Show Trajectory 1</button>
+  </div>
+  <div class="trajectory-column" style="display: flex; flex-direction: column; align-items: center;">
+    <h3 class="section-heading">Trajectory 2</h3>
+    <div id="grid-container-2" class="grid"><div class="loading-message">Loading...</div></div>
+    <button id="btn-trajectory-2" class="btn">Show Trajectory 2</button>
+  </div>
+</div>
+
+    <div class="section-heading">Feedback: Guide the Mouse to prefer Standard Cheese</div>
+    <div class="feedback-options" style="margin-top: 20px;display: flex; align-items: center; gap: 20px; justify-content: center;">
+  <p>Please select the trajectory which you think that the Mouse should prefer:</p>
+  <form id="trajectory-choice-form" style="display: flex; gap: 20px; align-items: center;">
+    <label>
+      <input type="radio" name="trajectory" value="1" required>
+      Trajectory 1
+    </label><br>
+    <label>
+      <input type="radio" name="trajectory" value="2">
+      Trajectory 2
+    </label>
+  </form>
+</div>
+  <div style="margin-top: 15px; display: flex;">
+    <button id="btn-next" type="button" style="margin-right: 10px;">Next</button>
+    <button id="btn-skip" type="button" style="margin-right: 10px;">Skip Current Trajectories</button>
+    <button id="btn-finish" type="button">Finish Giving Feedback</button>
+  </div>
+
+  <div id="retrain-summary" style="margin:2vw;display: none;">
+  <p>
+    The mouse has been retrained using reinforcement learning with human feedback.
+    The updated policy now incorporates preferences to prioritize standard cheese over organic cheese,
+    while still avoiding traps.
+  </p>
+
+  <button id="generate-trajectory-btn" class="submit-btn" type="button">Generate Trajectory</button>
+  <div id="grid-container-3" class="grid"></div>
+</div>
+
+
+</div>
+
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+let trajectoryData = null;
+let animationInterval = null;
+
+// Map integer codes to symbols for display
+const SYMBOLS = {
+    0: '.', // Empty
+    1: 'M', // Mouse
+    2: 'C', // Cheese
+    3: 'T', // Trap
+    4: '#', // Wall
+    5: 'O'  // Organic Cheese
+};
+
+document.getElementById('btn-skip').addEventListener('click', async () => {
+    // Show loading message while fetching
+    document.getElementById('grid-container-1').innerHTML = '<div class="loading-message">Loading...</div>';
+    document.getElementById('grid-container-2').innerHTML = '<div class="loading-message">Loading...</div>';
+
+    trajectoryData = await fetchTrajectoryPair();
+
+    if (trajectoryData && trajectoryData.trajectory1 && trajectoryData.trajectory1.frames.length > 0) {
+        renderGrid(trajectoryData.trajectory1.frames[0], 1);
+    }
+    if (trajectoryData && trajectoryData.trajectory2 && trajectoryData.trajectory2.frames.length > 0) {
+        renderGrid(trajectoryData.trajectory2.frames[0], 2);
+    }
+});
+
+
+function renderGrid(grid,label) {
+    const container = document.getElementById(`grid-container-${label}`);
+    container.innerHTML = '';
+    for (let row of grid) {
+        for (let cell of row) {
+            const div = document.createElement('div');
+            div.classList.add('cell');
+            const symbol = SYMBOLS[cell];
+            if (symbol === 'M') div.classList.add('M');
+            if (symbol === 'C') div.classList.add('C');
+            if (symbol === 'O') div.classList.add('O');
+            if (symbol === 'T') div.classList.add('T');
+            if (symbol === '#') div.classList.add('wall');
+            //div.innerText = (symbol === '.' || symbol === '#') ? '' : symbol;
+            container.appendChild(div);
+        }
+    }
+}
+
+function animateTrajectory(frames,label) {
+    let i = 0;
+    clearInterval(animationInterval);
+    animationInterval = setInterval(() => {
+        renderGrid(frames[i],label);
+        i++;
+        if (i >= frames.length) {
+            clearInterval(animationInterval);
+        }
+    }, 800);
+}
+
+async function fetchTrajectoryPair() {
+    const response = await fetch("{% url 'project5:get_trajectory_pair' %}");
+    const data = await response.json();
+    return {
+        trajectory1: data.trajectory1,
+        trajectory2: data.trajectory2,
+    };
+}
+
+async function generateTrajectory() {
+    document.getElementById('grid-container-3').innerHTML = '<div class="loading-message">Loading...</div>';
+    const response = await fetch("{% url 'project5:get_trajectory' %}");
+    const data = await response.json();
+    renderGrid(data.trajectory.frames[0],3);
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    animateTrajectory(data.trajectory.frames,3);
+    return;
+  }
+
+document.getElementById('generate-trajectory-btn')
+          .addEventListener('click', generateTrajectory);
+
+document.getElementById('btn-trajectory-1').addEventListener('click', () => {
+    if (!trajectoryData) return;
+    animateTrajectory(trajectoryData.trajectory1.frames,1);
+});
+
+document.getElementById('btn-trajectory-2').addEventListener('click', () => {
+    if (!trajectoryData) return;
+    animateTrajectory(trajectoryData.trajectory2.frames,2);
+});
+
+document.getElementById('btn-next').addEventListener('click', async () => {
+    // Get the selected choice radio value
+    const choiceInput = document.querySelector('input[name="trajectory"]:checked');
+    if (!choiceInput) {
+        alert('Please select a trajectory before clicking Next.');
+        return;
+    }
+    const choice = parseInt(choiceInput.value);
+
+    if (!trajectoryData) {
+        alert('No trajectory data loaded.');
+        return;
+    }
+
+    // Prepare payload to send full trajectories and choice
+    const payload = {
+        trajectory1: {
+            frames: trajectoryData.trajectory1,
+            // Add other meta-data if needed here, e.g. counts, etc.
+        },
+        trajectory2: {
+            frames: trajectoryData.trajectory2,
+        },
+        choice: choice
+    };
+
+    try {
+        const response = await fetch("{% url 'project5:save_feedback' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')  // Make sure CSRF token is sent
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            // Clear selection for next round
+            document.getElementById('trajectory-choice-form').reset();
+            document.getElementById('grid-container-1').innerHTML = '<div class="loading-message">Loading...</div>';
+            document.getElementById('grid-container-2').innerHTML = '<div class="loading-message">Loading...</div>';
+
+            // Fetch new trajectories for next pair
+            trajectoryData = await fetchTrajectoryPair();
+            if (trajectoryData && trajectoryData.trajectory1 && trajectoryData.trajectory1.frames.length > 0) {
+                renderGrid(trajectoryData.trajectory1.frames[0],1);
+            }
+            if (trajectoryData && trajectoryData.trajectory2 && trajectoryData.trajectory2.frames.length > 0) {
+                renderGrid(trajectoryData.trajectory2.frames[0],2);
+            }
+        } else {
+            alert('Failed to save feedback.');
+        }
+    } catch (error) {
+        console.error('Error saving feedback:', error);
+        alert('Error saving feedback.');
+    }
+});
+
+function fetchLogs() {
+    fetch("{% url 'project5:get_training_logs' %}")
+        .then(response => response.json())
+        .then(data => {
+            // Check if logs container exists, else create it
+            let logsDiv = document.getElementById('training-logs');
+            if (!logsDiv) {
+                logsDiv = document.createElement('div');
+                logsDiv.id = 'training-logs';
+                let mainText = document.getElementsByClassName('main-text')[0];
+                let lastChild = mainText.lastElementChild;
+                mainText.insertBefore(logsDiv, lastChild);
+                //document.getElementsByClassName('main-text')[0].appendChild(logsDiv);
+            }
+
+            // Clear any previous content
+            logsDiv.innerHTML = '';
+
+            // Create a table element
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.border = '1';
+
+            // Create table header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+
+            const headers = ['Batch', 'Avg Loss', 'Success Rate', 'Baseline', 'KL Divergence'];
+            headers.forEach(text => {
+                const th = document.createElement('th');
+                th.innerText = text;
+                th.style.border = '1px solid #ccc';
+                th.style.padding = '5px';
+                th.style.textAlign = 'left';
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create table body
+            const tbody = document.createElement('tbody');
+
+            // data.logs is expected to be an array of objects
+            data.logs.forEach(log => {
+                const row = document.createElement('tr');
+
+                // Use values in the order matching headers
+                ['batch', 'avg_loss', 'success_rate', 'baseline', 'kl'].forEach(key => {
+                    const td = document.createElement('td');
+                    td.innerText = log[key];
+                    td.style.border = '1px solid #ccc';
+                    td.style.padding = '5px';
+                    row.appendChild(td);
+                });
+
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(tbody);
+            logsDiv.appendChild(table);
+        })
+        .catch(console.error);
+}
+
+
+document.getElementById('btn-finish').addEventListener('click', async () => {
+    const choiceInput = document.querySelector('input[name="trajectory"]:checked');
+    if (!choiceInput) {
+        alert('Please select a trajectory before clicking Finish.');
+        return;
+    }
+    const choice = parseInt(choiceInput.value);
+
+    if (!trajectoryData) {
+        alert('No trajectory data loaded.');
+        return;
+    }
+
+    const payload = {
+        trajectory1: {
+            frames: trajectoryData.trajectory1,
+        },
+        trajectory2: {
+            frames: trajectoryData.trajectory2,
+        },
+        choice: choice
+    };
+    let intervalId = null;
+    let logInterval = null;
+    try {
+        if (!document.getElementById('training-message')) {
+                const messageDiv = document.createElement('div');
+                messageDiv.id = 'training-message';
+                messageDiv.className = 'section-heading';
+                messageDiv.textContent = 'Model Training accommodating User Feedback in Progress';
+                // Insert the message div right after the button container div
+                const buttonContainer = document.getElementById('btn-finish').parentElement; // div containing buttons
+                buttonContainer.insertAdjacentElement('afterend', messageDiv);
+
+                // Poll every 5 seconds
+                logInterval = setInterval(fetchLogs, 5000);
+
+                // Animation for dots after "Progress"
+                let dotCount = 1;
+                const baseText = 'Model Training accommodating User Feedback in Progress';
+
+                intervalId = setInterval(() => {
+                    dotCount = (dotCount % 3) + 1;  // cycles through 1,2,3
+                    messageDiv.textContent = baseText + ' ' + '.'.repeat(dotCount);
+                }, 500);
+        }
+
+        const response = await fetch("{% url 'project5:save_feedback_final' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            alert('Model trained successfully. Thanks for your feedback :)');
+            // Optionally clear the UI
+            document.getElementById('trajectory-choice-form').reset();
+            document.getElementById('grid-container-1').innerHTML = '';
+            document.getElementById('grid-container-2').innerHTML = '';
+            // Maybe also disable the buttons so user can't click again
+            document.getElementById('btn-next').disabled = true;
+            document.getElementById('btn-skip').disabled = true;
+            document.getElementById('btn-finish').disabled = true;
+
+            if (intervalId){
+                clearInterval(intervalId);
+            }
+
+            if (logInterval){
+                clearInterval(logInterval);
+            }
+            document.getElementById('training-message').innerText = 'Optimized Model Using REINFORCE with Learned Reward Penalty';
+            document.getElementById('retrain-summary').style.display = "block";
+        }
+        else {
+            if (intervalId){
+                clearInterval(intervalId);
+            }
+
+            if (logInterval){
+                clearInterval(logInterval);
+            }
+            document.getElementById('training-message').innerText = 'Optimized Model Using REINFORCE with Learned Reward Penalty';
+            alert('Failed to save feedback.');
+        }
+    } catch (error) {
+        console.error('Error saving feedback:', error);
+        if (intervalId){
+            clearInterval(intervalId);
+        }
+
+        if (logInterval){
+            clearInterval(logInterval);
+        }
+        document.getElementById('training-message').innerText = 'Optimized Model Using REINFORCE with Learned Reward Penalty';
+        alert('Error saving feedback.');
+    }
+});
+
+
+// Helper function to get CSRF token from cookie (Django default)
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+// On page load, fetch trajectories and show first frame of Trajectory 1
+(async () => {
+    trajectoryData = await fetchTrajectoryPair();
+    if (trajectoryData && trajectoryData.trajectory1 && trajectoryData.trajectory1.frames.length > 0) {
+        renderGrid(trajectoryData.trajectory1.frames[0],1);  // Show first frame of Trajectory 1
+    }
+    if (trajectoryData && trajectoryData.trajectory2 && trajectoryData.trajectory2.frames.length > 0) {
+        renderGrid(trajectoryData.trajectory2.frames[0],2);  // Show first frame of Trajectory 2
+    }
+})();
+</script>
+{% endblock %}
