@@ -12,6 +12,7 @@ from .enhanced_reinforce import train_with_penalty, generate_trajectory
 training_logs = []
 
 def index(request):
+    training_logs[:] = []
     return render(request, 'project5/index.html')
 
 @csrf_exempt
@@ -58,6 +59,7 @@ def save_feedback(request):
 def save_feedback_final(request):
     if request.method == 'POST':
         try:
+            training_logs[:] = []
             data = json.loads(request.body)
 
             TrajectoryPreference.objects.create(
@@ -79,8 +81,7 @@ def save_feedback_final(request):
 
             mean_sc_skill, mean_oc_skill = compute_mean_skills(theta, sc_list, oc_list)
 
-            train_with_penalty(mean_sc_skill, mean_oc_skill, training_logs, num_batches=100, batch_size=10)
-
+            train_with_penalty(mean_sc_skill, mean_oc_skill, training_logs, num_batches=200, batch_size=10)
 
             return JsonResponse({'status': 'success'})
         except Exception as e:

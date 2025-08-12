@@ -118,5 +118,5 @@ def get_reward(pos, grid):
 
 
 # Example usage
-grid, mouse_pos, cheese_pos, organic_cheese_positions = initialize_grid_with_cheese_types()
-print_grid_with_cheese_types(grid)
+# grid, mouse_pos, cheese_pos, organic_cheese_positions = initialize_grid_with_cheese_types()
+# print_grid_with_cheese_types(grid)

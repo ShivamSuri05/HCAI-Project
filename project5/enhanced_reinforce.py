@@ -174,37 +174,6 @@ def train_with_penalty(mean_sc_skill, mean_oc_skill, training_logs, num_batches=
 
     print("Retrained model saved as mouse_policy_retrained_with_penalty.pth")
 
-    plt.figure(figsize=(14,10))
-
-    plt.subplot(2,2,1)
-    plt.plot(all_losses)
-    plt.title("Batch Loss")
-    plt.xlabel("Batch")
-    plt.ylabel("Loss")
-
-    plt.subplot(2,2,2)
-    win = 10
-    success_pct = [np.mean(all_success_rates[max(0,i-win+1):i+1]) for i in range(len(all_success_rates))]
-    plt.plot(success_pct)
-    plt.title(f"Success rate (rolling window={win})")
-    plt.xlabel("Batch")
-    plt.ylabel("Success %")
-
-    plt.subplot(2,2,3)
-    plt.plot(all_kl_values)
-    plt.title("KL Divergence Penalty")
-    plt.xlabel("Batch")
-    plt.ylabel("Avg KL Divergence")
-
-    plt.subplot(2,2,4)
-    plt.plot(all_baselines)
-    plt.title("Baseline Moving Average")
-    plt.xlabel("Batch")
-    plt.ylabel("Baseline Value")
-
-    plt.tight_layout()
-    plt.show()
-
 def run_episode_full_updated(max_steps=50, step_penalty=-0.2):
     model_path='project5/mouse_policy_retrained_with_penalty.pth'
     checkpoint = torch.load(model_path, weights_only=False)

@@ -4,70 +4,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'project3/style.css' %}">
-<style>
-    /* Simple grid styles */
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(5, 50px);
-        gap: 2px;
-    }
-    .cell {
-        width: 50px;
-        height: 50px;
-        text-align: center;
-        line-height: 50px;
-        font-weight: bold;
-        border: 1px solid #ccc;
-        font-size: 20px;
-    }
-    .M { background-image: url('/static/images/mouse.jpg'); background-size: cover;}
-    .C { background-image: url('/static/images/cheese.jpg'); background-size: cover;}
-    .O { background-image: url('/static/images/organic_cheese.jpg'); background-size: cover;}
-    .T { background-image: url('/static/images/trap.jpg'); background-size: cover;}
-    .wall { background-image: url('/static/images/wall.jpeg'); background-size: cover;}
-
-    /* Buttons styling */
-    #buttons-container {
-        display: flex;
-        gap: 20vw;
-        justify-content: center;
-    }
-    button {
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-    }
-    #grid-container-1 {
-        border: black;
-        background: radial-gradient(black, transparent);
-        min-height: 15vw;
-    }
-    #grid-container-2 {
-        border: black;
-        background: radial-gradient(black, transparent);
-        min-height: 15vw;
-    }
-    #grid-container-3 {
-        border: black;
-        margin: 2vw;
-        min-height: 15vw;
-        justify-content: center;
-    }
-    .loading-message {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 250px; /* same height as grid */
-  width: 550%;
-  font-size: 24px;
-  color: white;
-}
-.btn {
-    margin: 2vw;
-    width: 100%;
-}
-
-</style>
+<link rel="stylesheet" href="{% static 'project5/style.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -418,6 +355,7 @@ document.getElementById('btn-finish').addEventListener('click', async () => {
         const result = await response.json();
 
         if (result.status === 'success') {
+            fetchLogs();
             alert('Model trained successfully. Thanks for your feedback :)');
             // Optionally clear the UI
             document.getElementById('trajectory-choice-form').reset();
@@ -425,8 +363,14 @@ document.getElementById('btn-finish').addEventListener('click', async () => {
             document.getElementById('grid-container-2').innerHTML = '';
             // Maybe also disable the buttons so user can't click again
             document.getElementById('btn-next').disabled = true;
+            document.getElementById('btn-next').classList.add('disabled-element');
+
             document.getElementById('btn-skip').disabled = true;
+            document.getElementById('btn-skip').classList.add('disabled-element');
+
             document.getElementById('btn-finish').disabled = true;
+            document.getElementById('btn-finish').classList.add('disabled-element');
+
 
             if (intervalId){
                 clearInterval(intervalId);
