@@ -175,4 +175,4 @@ def train(num_batches=400, batch_size=10):
     plt.show()
 
 # Run training
-train(num_batches=10, batch_size=2)
+train(num_batches=500, batch_size=20)

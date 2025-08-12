@@ -157,6 +157,10 @@
   cursor: pointer;
 }
 
+.submit-btn.disabled{
+  width: 35%;
+}
+
 #submit-btns {
   text-align: center;
 }

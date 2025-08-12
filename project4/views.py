@@ -16,11 +16,14 @@ import base64
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
-TMDB_API_KEY = os.getenv("TMDB_API_KEY")
+TMDB_API_KEY = os.getenv("TMDB_API_KEY", "06cefd681c34b11ea37ce7bde55ed5d5")
 
 MAX_SKIPS = 5
 
 def index(request):
+    if 'skip_count' in request.session:
+        request.session['skip_count'] = 0
+    
     return render(request, 'project4/index.html', {})
 
 def download_pdf(request):
