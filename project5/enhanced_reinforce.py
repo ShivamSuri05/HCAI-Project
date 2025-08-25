@@ -247,8 +247,16 @@ def run_episode_full_updated(max_steps=50, step_penalty=-0.2):
 
 
 def generate_trajectory():
+    model_path='project5/mouse_policy_retrained_with_penalty.pth'
+    checkpoint = torch.load(model_path, weights_only=False)
+    mean_sc_skill = checkpoint['mean_sc_skill']
+    mean_oc_skill = checkpoint['mean_oc_skill']
     while 1:
         traj = run_episode_full_updated()
-        if traj['standard_cheese_count']:
-            break
+        if mean_oc_skill > mean_sc_skill:
+            if traj['organic_cheese_count']:
+                break
+        else:
+            if traj['standard_cheese_count']:
+                break
     return traj
