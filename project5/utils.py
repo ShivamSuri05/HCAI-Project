@@ -180,8 +180,8 @@ def learned_reward(cell_content, mean_sc_skill, mean_oc_skill):
 
 def compute_mean_skills(theta, sc_list, oc_list):
     start = sc_list[0]
-    if len(sc_list)>2:
-        start = sc_list[2]
+    if len(sc_list)>1:
+        start = sc_list[1]
     sc_list[0] = start
     sc_skills = [theta[idx] for idx in sc_list]
     oc_skills = [theta[idx] for idx in oc_list]
@@ -217,7 +217,7 @@ def collect_preferences(trajectory_pairs):
             sc_list.append(id2)
             oc_list.append(id1)
 
-        if choice == 1:
+        if choice == '1':
             preferences.append((id1, id2))
         else:
             preferences.append((id2, id1))

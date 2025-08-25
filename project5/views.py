@@ -13,6 +13,7 @@ training_logs = []
 
 def index(request):
     training_logs[:] = []
+    TrajectoryPreference.objects.all().delete()
     return render(request, 'project5/index.html')
 
 @csrf_exempt
